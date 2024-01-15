@@ -11,9 +11,6 @@ import logging
 import re
 
 # Global Constants
-CONFIG_FILE = "config/config.js"
-RUNMASK_FILE_KEY = "IO/runmask_file"
-OUTDIR_KEY = "IO/output_dir"
 BASE_OUTDIR = "batch-run"
 
 
@@ -55,8 +52,8 @@ def setup_directories(base_outdir, nbatches):
 
 
 def modify_config_for_batch(batch_num, work_dir, config):
-    config[RUNMASK_FILE_KEY] = f"{work_dir}/batch-{batch_num}/run-mask.nc"
-    config[OUTDIR_KEY] = f"{work_dir}/batch-{batch_num}/output/"
+    config["IO"]["runmask_file"] = f"{work_dir}/batch-{batch_num}/run-mask.nc"
+    config["IO"]["output_dir"] = f"{work_dir}/batch-{batch_num}/output/"
     with open(f"{work_dir}/batch-{batch_num}/config.js", "w") as f:
         json.dump(config, f, indent=2, sort_keys=True)
 
@@ -69,7 +66,6 @@ def generate_slurm_script(batch, args, work_dir):
         #SBATCH -p {args.slurm_partition}
         #SBATCH -N 1
         #SBATCH -o slurm-{batch}.out
-        echo $SLURM_JOB_NODELIST
         ulimit -s unlimited
         ulimit -l unlimited
         . /dependencies/setup-env.sh
@@ -85,9 +81,11 @@ def generate_slurm_script(batch, args, work_dir):
 
 def handle_batch_split(args):
     setup_logging()
-    config = read_config(CONFIG_FILE)
-    BASE_RUNMASK = config[RUNMASK_FILE_KEY]
-    BASE_OUTDIR = config[OUTDIR_KEY]
+    home = os.getenv("HOME")
+    config_file = f"{home}/dvm-dos-tem/config/config.js"
+    config = read_config(config_file)
+    BASE_RUNMASK = config["IO"]["runmask_file"]
+    BASE_OUTDIR = config["IO"]["output_dir"]
 
     with nc.Dataset(BASE_RUNMASK, "r") as runmask:
         TOTAL_CELLS_TO_RUN = np.count_nonzero(runmask.variables["run"])
