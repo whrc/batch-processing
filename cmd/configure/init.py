@@ -20,12 +20,20 @@ def handle_init(args):
     # Copy necessary files from the cloud
     run_command(["gsutil", "-m", "cp", "-r", "gs://slurm-homefs/dvm-dos-tem", home_dir])
     run_command(["chmod", "+x", os.path.join(dvm_dos_tem_dir, "dvmdostem")])
-    run_command(["gsutil", "-m", "cp", "gs://four-basins/all-merged/config/output_spec.csv", os.path.join(dvm_dos_tem_dir, "config/output_spec.csv")])
+    run_command(
+        [
+            "gsutil",
+            "-m",
+            "cp",
+            "gs://four-basins/all-merged/config/output_spec.csv",
+            os.path.join(dvm_dos_tem_dir, "config/output_spec.csv"),
+        ]
+    )
 
     # Copy the input data if the path is provided
     data = args.input_data
     if data:
-        run_command(["mkdir", "-p", "input/"])        
+        run_command(["mkdir", "-p", "input/"])
         run_command(["gsutil", "-m", "cp", "-r", data, "."])
 
     exacloud_user_dir = f"/mnt/exacloud/{user}"
@@ -42,4 +50,11 @@ def handle_init(args):
     # Modify the configuration file
     config_path = os.path.join(dvm_dos_tem_dir, "config/config.js")
     output_dir_path = os.path.join(exacloud_user_dir, "output/")
-    run_command(["sed", "-i", f"s|\"output_dir\":\s*\"output/\",|\"output_dir\": \"{output_dir_path}\",|", config_path])
+    run_command(
+        [
+            "sed",
+            "-i",
+            f's|"output_dir":\s*"output/",|"output_dir": "{output_dir_path}",|',
+            config_path,
+        ]
+    )
