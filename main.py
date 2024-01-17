@@ -4,6 +4,7 @@ import textwrap
 from cmd.configure.input import handle_configure
 from cmd.configure.init import handle_init
 from cmd.batch.split import handle_batch_split
+from cmd.batch.run import handle_batch_run
 
 
 if __name__ == "__main__":
@@ -58,13 +59,8 @@ if __name__ == "__main__":
     parser_batch_split.add_argument("-n", type=int, required=True, help="Number of SCENARIO years to run")
     parser_batch_split.set_defaults(func=handle_batch_split)
 
-    parser_batch_run = batch_subparsers.add_parser("run", help="Run the batches")
-    parser_batch_run.add_argument(
-        "-b",
-        "--batch-dir",
-        default="/mnt/exacloud/$USER/output",
-        help="A directory path that contains the batches. By default, /mnt/exacloud/$USER/output. Probably don't need to set this argument",
-    )
+    parser_batch_run = batch_subparsers.add_parser("run", help="Submit the batches to the Slurm queue")
+    parser_batch_run.set_defaults(func=handle_batch_run)
 
     parser_config = subparsers.add_parser(
         "configure", help="Configuration related operations"
