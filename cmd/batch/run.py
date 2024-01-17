@@ -11,7 +11,7 @@ def get_batch_count(batch_dir: str) -> int:
 
 def submit_batches():
     USER = os.getenv("USER")
-    BATCH_DIR = f"/mnt/exacloud/{USER}/batch-run"
+    BATCH_DIR = f"/mnt/exacloud/{USER}/output/batch-run"
     total_batches = get_batch_count(BATCH_DIR)
     for index in range(0, total_batches):
         slurm_script_path = f"{BATCH_DIR}/batch-{index}/slurm_runner.sh"
