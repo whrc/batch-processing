@@ -5,6 +5,7 @@ from cmd.configure.input import handle_configure
 from cmd.configure.init import handle_init
 from cmd.batch.split import handle_batch_split
 from cmd.batch.run import handle_batch_run
+from cmd.monitor import handle_monitoring
 
 
 if __name__ == "__main__":
@@ -61,6 +62,12 @@ if __name__ == "__main__":
 
     parser_batch_run = batch_subparsers.add_parser("run", help="Submit the batches to the Slurm queue")
     parser_batch_run.set_defaults(func=handle_batch_run)
+
+    parser_monitoring = subparsers.add_parser("monitor", help="Monitors the batches and if there is an unfinished job, it resubmits that.")
+    group = parser_monitoring.add_mutually_exclusive_group(required=True)
+    group.add_argument("--start", action="store_true", help="Starts the monitoring process")
+    group.add_argument("--stop", action="store_true", help="Stops the monitoring process")
+    parser_monitoring.set_defaults(func=handle_monitoring)
 
     parser_config = subparsers.add_parser(
         "configure", help="Configuration related operations"
