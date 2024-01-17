@@ -6,6 +6,7 @@ from cmd.configure.init import handle_init
 from cmd.batch.split import handle_batch_split
 from cmd.batch.run import handle_batch_run
 from cmd.monitor import handle_monitoring
+from cmd.batch.merge import handle_batch_merge
 
 
 if __name__ == "__main__":
@@ -53,28 +54,56 @@ if __name__ == "__main__":
         default="spot",
         help="Specificy the Slurm partition. By default, spot",
     )
-    parser_batch_split.add_argument("-p", type=int, required=True, help="Number of PRE RUN years to run")
-    parser_batch_split.add_argument("-e", type=int, required=True, help="Number of EQUILIBRIUM years to run")
-    parser_batch_split.add_argument("-s", type=int, required=True, help="Number of SPINUP years to run")
-    parser_batch_split.add_argument("-t", type=int, required=True, help="Number of TRANSIENT years to run")
-    parser_batch_split.add_argument("-n", type=int, required=True, help="Number of SCENARIO years to run")
+    parser_batch_split.add_argument(
+        "-p", type=int, required=True, help="Number of PRE RUN years to run"
+    )
+    parser_batch_split.add_argument(
+        "-e", type=int, required=True, help="Number of EQUILIBRIUM years to run"
+    )
+    parser_batch_split.add_argument(
+        "-s", type=int, required=True, help="Number of SPINUP years to run"
+    )
+    parser_batch_split.add_argument(
+        "-t", type=int, required=True, help="Number of TRANSIENT years to run"
+    )
+    parser_batch_split.add_argument(
+        "-n", type=int, required=True, help="Number of SCENARIO years to run"
+    )
     parser_batch_split.set_defaults(func=handle_batch_split)
 
-    parser_batch_run = batch_subparsers.add_parser("run", help="Submit the batches to the Slurm queue")
+    parser_batch_run = batch_subparsers.add_parser(
+        "run", help="Submit the batches to the Slurm queue"
+    )
     parser_batch_run.set_defaults(func=handle_batch_run)
 
-    parser_monitoring = subparsers.add_parser("monitor", help="Monitors the batches and if there is an unfinished job, it resubmits that.")
+    parser_batch_merge = batch_subparsers.add_parser(
+        "merge", help="Merge the completed batches"
+    )
+    parser_batch_merge.set_defaults(func=handle_batch_merge)
+
+    parser_monitoring = subparsers.add_parser(
+        "monitor",
+        help="Monitors the batches and if there is an unfinished job, it resubmits that.",
+    )
     group = parser_monitoring.add_mutually_exclusive_group(required=True)
-    group.add_argument("--start", action="store_true", help="Starts the monitoring process")
-    group.add_argument("--stop", action="store_true", help="Stops the monitoring process")
+    group.add_argument(
+        "--start", action="store_true", help="Starts the monitoring process"
+    )
+    group.add_argument(
+        "--stop", action="store_true", help="Stops the monitoring process"
+    )
     parser_monitoring.set_defaults(func=handle_monitoring)
 
     parser_config = subparsers.add_parser(
         "configure", help="Configuration related operations"
     )
-    config_subparsers = parser_config.add_subparsers(title="Available commands", metavar="")
+    config_subparsers = parser_config.add_subparsers(
+        title="Available commands", metavar=""
+    )
 
-    parser_config_init = config_subparsers.add_parser("init", help="Initialize the Slurm working environment")
+    parser_config_init = config_subparsers.add_parser(
+        "init", help="Initialize the Slurm working environment"
+    )
     parser_config_init.add_argument(
         "-d",
         "--input-data",
@@ -82,7 +111,9 @@ if __name__ == "__main__":
     )
     parser_config_init.set_defaults(func=handle_init)
 
-    parser_config_input = config_subparsers.add_parser("input", help="Configure the input data")
+    parser_config_input = config_subparsers.add_parser(
+        "input", help="Configure the input data"
+    )
     parser_config_input.add_argument(
         "-i",
         "--input-path",
