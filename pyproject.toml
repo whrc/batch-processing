@@ -1,0 +1,37 @@
+# [build-system]
+# build-backend = "flit_core.buildapi"
+# requires = ["flit_core >=3.8.0,<4"]
+
+[project]
+name = "batch-processing"
+version = "1.0.0"
+authors = [{ name = "Doğukan Teber", email = "dteber@woodwellclimate.org" }]
+description = "An internal tool that automates almost everything in the GCP Cluster"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+dependencies = ["numpy", "netCDF4", "ruff"]
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "UP", # pyupgrade,
+    "I",  # isort
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
