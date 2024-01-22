@@ -12,3 +12,18 @@ BUCKET_OUTPUT_SPEC = "gs://four-basins/all-merged/config/output_spec.csv"
 OUTPUT_SPEC_PATH = os.path.join(DVMDOSTEM_DIR, "config/output_spec.csv")
 CONFIG_PATH = os.path.join(DVMDOSTEM_DIR, "config/config.js")
 OUTPUT_PATH = os.path.join(EXACLOUD_USER_DIR, "output/")
+IO_FILE_KEYS = [
+    "hist_climate_file",
+    "proj_climate_file",
+    "veg_class_file",
+    "drainage_file",
+    "soil_texture_file",
+    "co2_file",
+    "proj_co2_file",
+    "runmask_file",
+    "topo_file",
+    "fri_fire_file",
+    "hist_exp_fire_file",
+    "proj_exp_fire_file",
+    "topo_file",
+]
