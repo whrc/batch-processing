@@ -1,9 +1,13 @@
 import os
 import json
+import sys
 import time
 import shutil
 import subprocess
 import logging
+import signal
+from pathlib import Path
+
 
 logging.basicConfig(
     filename="/home/dteber_woodwellclimate_org/monitor.log",
@@ -85,11 +89,35 @@ def check_instances():
                 instance_mapping[name] = ""
 
 
+def monitor():
+    while True:
+        check_instances()
+        logger.debug(instance_mapping)
+        time.sleep(5)
+
+
 def handle_monitoring(args):
     if args.start:
-        while True:
-            check_instances()
-            logger.debug(instance_mapping)
-            time.sleep(5)
+        try:
+            pid = os.fork()
+            if pid > 0:
+                sys.exit(0)
+        except OSError as e:
+            print >> sys.stderr, "fork failed: %d (%s)" % (e.errno, e.strerror)
+            sys.exit(1)
+
+        Path(f"{os.getenv('HOME')}/.batch-processing").mkdir(exist_ok=True)
+        os.chdir(f"{os.getenv('HOME')}/.batch-processing")
+
+        with open("monitor_pid", "w") as file:
+            file.write(str(os.getpid()))
+
+        os.setsid()
+        os.umask(0)
+
+        monitor()
+
     elif args.stop:
-        print("--stop flag is provided")
+        with open(f"{os.getenv('HOME')}/.batch-processing/monitor_pid") as file:
+            pid = int(file.read())
+            os.kill(pid, signal.SIGTERM)
