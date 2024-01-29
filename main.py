@@ -1,13 +1,11 @@
 import argparse
 import textwrap
-
-from cmd.configure.input import handle_configure
-from cmd.configure.init import handle_init
-from cmd.batch.split import handle_batch_split
-from cmd.batch.run import handle_batch_run
-from cmd.monitor import handle_monitoring
 from cmd.batch.merge import handle_batch_merge
-
+from cmd.batch.run import handle_batch_run
+from cmd.batch.split import handle_batch_split
+from cmd.configure.init import handle_init
+from cmd.configure.input import handle_configure
+from cmd.monitor import MonitorCommand
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -92,7 +90,7 @@ if __name__ == "__main__":
     group.add_argument(
         "--stop", action="store_true", help="Stops the monitoring process"
     )
-    parser_monitoring.set_defaults(func=handle_monitoring)
+    parser_monitoring.set_defaults(func=lambda args: MonitorCommand(args).execute())
 
     parser_config = subparsers.add_parser(
         "configure", help="Configuration related operations"
