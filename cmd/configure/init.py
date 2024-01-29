@@ -24,6 +24,7 @@ def handle_init(args):
             raise ValueError("The input path needs to be started with gs://")
 
         run_command(["mkdir", "-p", INPUT_DIR])
+        # todo: use gcloud's python client package
         run_command(["gsutil", "-m", "cp", "-r", data, INPUT_DIR])
 
     # Copy necessary files from the cloud
