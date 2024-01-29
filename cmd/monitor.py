@@ -19,6 +19,8 @@ logger = logging.getLogger()
 
 MAX_INSTANCE_COUNT = 16
 TERMINATED = "TERMINATED"
+NOT_FOUND = "NOT FOUND"
+TODO = "TODO"
 
 instance_mapping = {}
 instance_names = []
@@ -49,6 +51,7 @@ def delete_output_folder(path):
     shutil.rmtree(path)
 
 
+# todo: replace this with gcloud python client library
 def descibe_instance(instance_name):
     try:
         return subprocess.check_output(
@@ -63,7 +66,7 @@ def descibe_instance(instance_name):
             ]
         )
     except subprocess.CalledProcessError as e:
-        logger.error(f"Something went wrong when running the command: {e}")
+        logger.debug(f"Something went wrong when running the command: {e}")
         return None
 
 
@@ -75,7 +78,9 @@ def get_instance_status(output):
 def check_instances():
     for name in instance_names:
         output = descibe_instance(name)
-        if output:
+        if output is None:
+            instance_mapping[name] = NOT_FOUND
+        else:
             status = get_instance_status(output)
             instance_mapping[name] = status
             if status == TERMINATED:
@@ -86,11 +91,12 @@ def check_instances():
                     f"/mnt/exacloud/{user}/output/batch-run/batch-{batch_number}"
                 )
                 delete_output_folder(output_folder_path)
-                instance_mapping[name] = ""
+                instance_mapping[name] = TODO
 
 
 def monitor():
     while True:
+        logger.debug("Checking the instances...")
         check_instances()
         logger.debug(instance_mapping)
         time.sleep(5)
@@ -103,7 +109,7 @@ def handle_monitoring(args):
             if pid > 0:
                 sys.exit(0)
         except OSError as e:
-            print >> sys.stderr, "fork failed: %d (%s)" % (e.errno, e.strerror)
+            print(f"fork failed: {e.errno} ({e.strerror})" % (e.errno, e.strerror))
             sys.exit(1)
 
         Path(f"{os.getenv('HOME')}/.batch-processing").mkdir(exist_ok=True)
