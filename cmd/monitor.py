@@ -1,13 +1,17 @@
-import os
+from __future__ import annotations
+
 import json
+import logging
+import os
+import shutil
+import signal
+import subprocess
 import sys
 import time
-import shutil
-import subprocess
-import logging
-import signal
+from collections.abc import Iterable
 from pathlib import Path
 
+from google.cloud import compute_v1
 
 logging.basicConfig(
     filename="/home/dteber_woodwellclimate_org/monitor.log",
@@ -20,12 +24,6 @@ logger = logging.getLogger()
 MAX_INSTANCE_COUNT = 16
 TERMINATED = "TERMINATED"
 NOT_FOUND = "NOT FOUND"
-TODO = "TODO"
-
-instance_mapping = {}
-instance_names = []
-for i in range(0, MAX_INSTANCE_COUNT):
-    instance_names.append(f"slurmlustr-spot-ghpc-{i}")
 
 
 def get_queue():
@@ -51,54 +49,59 @@ def delete_output_folder(path):
     shutil.rmtree(path)
 
 
-# todo: replace this with gcloud python client library
-def descibe_instance(instance_name):
-    try:
-        return subprocess.check_output(
-            [
-                "gcloud",
-                "compute",
-                "instances",
-                "describe",
-                instance_name,
-                "--format=json(status)",
-                "--zone=us-central1-c",
-            ]
-        )
-    except subprocess.CalledProcessError as e:
-        logger.debug(f"Something went wrong when running the command: {e}")
-        return None
+def get_instance_mapping(
+    instance_names: list,
+    project_id: str = "spherical-berm-323321",
+    zone: str = "us-central1-c",
+) -> Iterable[compute_v1.Instance]:
+    """List all instances in the given zone in the specified project.
+
+    Args:
+        project_id: project ID or project number of the Cloud project you want to use.
+        zone: name of the zone you want to use.
+    Returns:
+        An iterable collection of Instance objects.
+    """
+    instance_client = compute_v1.InstancesClient()
+    instance_list = instance_client.list(project=project_id, zone=zone)
+
+    logger.debug(f"Instances found in zone {zone}:")
+    instance_mapping = {}
+    for instance in instance_list:
+        # skip the VMs we are not interested in
+        if instance.name not in instance_names:
+            continue
+
+        instance_mapping[instance.name] = instance.status
+
+    logger.debug(f"The latest mapping: {instance_mapping}")
+    return instance_mapping
 
 
-def get_instance_status(output):
-    data = json.loads(output)
-    return data.get("status")
+def check_instances(instances):
+    instance_status_mapping = get_instance_mapping(instances)
+    for name, status in instance_status_mapping.items():
+        if status == TERMINATED:
+            logger.debug(f"{name} is terminated.")
+            batch_number = get_batch_number(name)
+            user = os.getenv("USER")
+            output_folder_path = (
+                f"/mnt/exacloud/{user}/output/batch-run/batch-{batch_number}"
+            )
+            delete_output_folder(output_folder_path)
+            instance_status_mapping[name] = ""
 
-
-def check_instances():
-    for name in instance_names:
-        output = descibe_instance(name)
-        if output is None:
-            instance_mapping[name] = NOT_FOUND
-        else:
-            status = get_instance_status(output)
-            instance_mapping[name] = status
-            if status == TERMINATED:
-                logger.debug(f"{name} is terminated.")
-                batch_number = get_batch_number(name)
-                user = os.getenv("USER")
-                output_folder_path = (
-                    f"/mnt/exacloud/{user}/output/batch-run/batch-{batch_number}"
-                )
-                delete_output_folder(output_folder_path)
-                instance_mapping[name] = TODO
+    logger.debug(instance_status_mapping)
 
 
 def monitor():
+    instance_names = []
+    for i in range(0, MAX_INSTANCE_COUNT):
+        instance_names.append(f"slurmlustr-spot-ghpc-{i}")
+
     while True:
         logger.debug("Checking the instances...")
-        check_instances()
-        logger.debug(instance_mapping)
+        check_instances(instance_names)
         time.sleep(5)
 
 
