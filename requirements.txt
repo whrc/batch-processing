@@ -1,0 +1,4 @@
+netCDF4==1.6.5
+numpy==1.26.3
+google-cloud-compute==1.15.0
+ruff==0.1.13
