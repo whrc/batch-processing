@@ -97,5 +97,6 @@ def handle_batch_split(args):
     batch_dir = setup_directories(BASE_OUTDIR, nbatches)
 
     for batch_num in range(nbatches):
+        # todo: create a progress bar for splitting
         modify_config_for_batch(batch_num, batch_dir, config)
         generate_slurm_script(batch_num, args, batch_dir)

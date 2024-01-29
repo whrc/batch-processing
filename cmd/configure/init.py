@@ -14,6 +14,7 @@ from batch_processing.constants import (
 from batch_processing.utils import run_command
 
 
+# todo: display info messages after the each operation is completed
 def handle_init(args):
     if USER == "root":
         raise ValueError("Do not run as root or with sudo.")
@@ -47,6 +48,7 @@ def handle_init(args):
     run_command(["lfs", "setstripe", "-S", "0.25M", EXACLOUD_USER_DIR])
 
     # Modify `output_dir` field in the configuration file
+    # todo: move this operation to cmd/input.py file
     run_command(
         [
             "sed",

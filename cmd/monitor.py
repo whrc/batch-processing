@@ -67,6 +67,8 @@ class MonitorCommand(BaseCommand):
 
     def execute(self):
         if self._args.start:
+            # todo: print a message saying that the monitoring has started
+            # and it can be followed from ... log file
             self._start_monitoring()
         elif self._args.stop:
             self._stop_monitoring()

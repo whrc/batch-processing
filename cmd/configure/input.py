@@ -46,6 +46,7 @@ def _map_input_files(config_file_path: str, input_path: str) -> None:
         json.dump(config, file, indent=2)
 
 
+# todo: update parameter_dir and output_spec_file as well in this function
 def handle_configure(args: argparse.Namespace) -> None:
     # dvmdostem cannot interpret ~ (tilde) as the home directory
     if "~" in args.input_path:
