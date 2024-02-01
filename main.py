@@ -3,9 +3,9 @@ import textwrap
 from cmd.batch.merge import handle_batch_merge
 from cmd.batch.run import handle_batch_run
 from cmd.batch.split import handle_batch_split
-from cmd.configure.init import handle_init
 from cmd.configure.input import handle_configure
 from cmd.monitor import MonitorCommand
+from cmd.configure.init import ConfigureInitCommand
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         "--input-data",
         help="An absolute path of the data folder in the Google Bucket. Example: gs://iem-dataset/uaem-quick-datashare",
     )
-    parser_config_init.set_defaults(func=handle_init)
+    parser_config_init.set_defaults(func=lambda args: ConfigureInitCommand(args).execute())
 
     parser_config_input = config_subparsers.add_parser(
         "input", help="Configure the input data"
