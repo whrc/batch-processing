@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 
@@ -32,5 +33,6 @@ def download_directory(bucket_name: str, prefix: str) -> None:
             continue
         file_split = blob.name.split("/")
         directory = "/".join(file_split[0:-1])
-        Path(directory).mkdir(parents=True, exist_ok=True)
-        blob.download_to_filename(blob.name)
+        absolute_directory = f"{os.getenv('HOME')}/{directory}"
+        Path(absolute_directory).mkdir(parents=True, exist_ok=True)
+        blob.download_to_filename(f"{os.getenv('HOME')}/{blob.name}")
