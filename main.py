@@ -2,10 +2,11 @@ import argparse
 import textwrap
 from cmd.batch.merge import handle_batch_merge
 from cmd.batch.run import handle_batch_run
-from cmd.batch.split import handle_batch_split
+
 from cmd.monitor import MonitorCommand
 from cmd.configure.init import ConfigureInitCommand
 from cmd.configure.input import ConfigureInputCommand
+from cmd.batch.split import BatchSplitCommand
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     parser_batch_split.add_argument(
         "-n", type=int, required=True, help="Number of SCENARIO years to run"
     )
-    parser_batch_split.set_defaults(func=handle_batch_split)
+    parser_batch_split.set_defaults(func=lambda args: BatchSplitCommand(args).execute())
 
     parser_batch_run = batch_subparsers.add_parser(
         "run", help="Submit the batches to the Slurm queue"

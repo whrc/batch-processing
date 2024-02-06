@@ -1,5 +1,6 @@
 import os
 import subprocess
+import errno
 from pathlib import Path
 
 from google.cloud import storage
@@ -8,6 +9,17 @@ from google.cloud import storage
 def run_command(command):
     """Executes a shell command."""
     subprocess.run(command, check=True)
+
+
+def mkdir_p(path):
+    """Provides similar functionality to bash mkdir -p"""
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 
 def download_directory(bucket_name: str, prefix: str) -> None:
