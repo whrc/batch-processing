@@ -25,16 +25,6 @@ class ConfigureInitCommand(BaseCommand):
         if self.user == "root":
             raise ValueError("Do not run as root or with sudo.")
 
-        data = self._args.input_data
-        if data:
-            Path(self._input_dir).mkdir(exist_ok=True)
-            # todo: take `bucket_name` and `prefix` as arguments
-            # download_directory(args.bucket_name, args.prefix)
-            run_command(["gsutil", "-m", "cp", "-r", data, self._input_dir])
-            print(
-                f"The input data is successfully copied from Google Bucket to {self._input_dir}"
-            )
-
         # Copy necessary files from the cloud
         download_directory("slurm-homefs", "dvm-dos-tem/")
         print(f"dvm-dos-tem is copied to {os.getenv('HOME')}")
@@ -57,6 +47,16 @@ class ConfigureInitCommand(BaseCommand):
             f"A new directory is created for the current user, {os.getenv('USER')} in /mnt/exacloud"
         )
 
+        data = self._args.input_data
+        if data:
+            Path(self._input_dir).mkdir(exist_ok=True)
+            # todo: take `bucket_name` and `prefix` as arguments
+            # download_directory(args.bucket_name, args.prefix)
+            run_command(["gsutil", "-m", "cp", "-r", data, self._input_dir])
+            print(
+                f"The input data is successfully copied from Google Bucket to {self._input_dir}"
+            )
+
         Path(SLURM_LOG_PATH).mkdir(exist_ok=True)
         # run_command(["sudo", "mkdir", "-p", SLURM_LOG_PATH])
 
@@ -74,4 +74,6 @@ class ConfigureInitCommand(BaseCommand):
         )
 
         print("The initialization is successfully completed.")
-        print(f"Check /home/{os.getenv('USER')} and /mnt/exacloud/{os.getenv('USER')} for the changes.")
+        print(
+            f"Check /home/{os.getenv('USER')} and /mnt/exacloud/{os.getenv('USER')} for the changes."
+        )
