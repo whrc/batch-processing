@@ -30,7 +30,6 @@ class ConfigureInputCommand(BaseCommand):
 
         self._args = args
 
-    # todo: update parameter_dir and output_spec_file as well in this function
     def execute(self):
         with open(CONFIG_PATH) as file:
             file_content = file.read()
@@ -46,7 +45,7 @@ class ConfigureInputCommand(BaseCommand):
             io_json[key] = self._args.input_path + file_name
 
         io_json["parameter_dir"] = f"{os.getenv('HOME')}/dvm-dos-tem/parameters/"
-        io_json["output_dir"] = f"/mnt/exacloud/{os.getenv('USER')}/output/"
+        io_json["output_dir"] = f"/mnt/exacloud/{os.getenv('USER')}/output"
         io_json[
             "output_spec_file"
         ] = f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv"
