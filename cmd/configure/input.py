@@ -1,56 +1,52 @@
-import argparse
 import json
+import os
 import re
+from cmd.base import BaseCommand
 
-from batch_processing.constants import CONFIG_PATH, HOME, IO_FILE_KEYS
-
-
-def _modify_config(file_path: str) -> None:
-    """
-    Modifies the given config file by removing lines or parts of lines that
-    contain comments. This function cleans `config.js` for JSON processing
-    by removing JavaScript-style comments.
-    """
-    with open(file_path) as file:
-        lines = file.readlines()
-
-    # Regex pattern to match comments. It matches '//' and everything after it,
-    # but does not match '//' that are within a string.
-    # This regex assumes that you don't have strings containing '//' that
-    # you want to keep.
-    pattern = re.compile(r'(?<!: )"//.*|//.*')
-
-    modified_lines = [pattern.sub("", line) for line in lines]
-
-    # Optionally, remove any fully empty lines left after removing comments
-    modified_lines = [line for line in modified_lines if line.strip()]
-
-    with open(file_path, "w") as file:
-        file.writelines(modified_lines)
+from batch_processing.constants import CONFIG_PATH
 
 
-def _map_input_files(config_file_path: str, input_path: str) -> None:
-    """Maps the input files to the desired directory."""
-    with open(config_file_path) as file:
-        config = json.load(file)
+class ConfigureInputCommand(BaseCommand):
+    IO_FILE_KEYS = [
+        "hist_climate_file",
+        "proj_climate_file",
+        "veg_class_file",
+        "drainage_file",
+        "soil_texture_file",
+        "co2_file",
+        "proj_co2_file",
+        "runmask_file",
+        "topo_file",
+        "fri_fire_file",
+        "hist_exp_fire_file",
+        "proj_exp_fire_file",
+        "topo_file",
+    ]
+
+    def __init__(self, args):
+        # dvmdostem cannot interpret ~ (tilde) as the home directory
+        if "~" in args.input_path:
+            args.input_path = args.input_path.replace("~", os.getenv("HOME"))
+
+        self._args = args
+
+    # todo: update parameter_dir and output_spec_file as well in this function
+    def execute(self):
+        with open(CONFIG_PATH) as file:
+            file_content = file.read()
+
+        config = json.loads(re.sub("//.*\n", "\n", file_content))
 
         io_json = config["IO"]
-        for key in IO_FILE_KEYS:
+        for key in self.IO_FILE_KEYS:
             value = io_json[key]
             file_name = value.split("/")[-1]
-            if not input_path.endswith("/"):
-                input_path += "/"
-            io_json[key] = input_path + file_name
+            if not self._args.input_path.endswith("/"):
+                self._args.input_path += "/"
+            io_json[key] = self._args.input_path + file_name
 
-    with open(config_file_path, "w") as file:
-        json.dump(config, file, indent=2)
+        with open(CONFIG_PATH, "w") as file:
+            json.dump(config, file, indent=2)
 
-
-# todo: update parameter_dir and output_spec_file as well in this function
-def handle_configure(args: argparse.Namespace) -> None:
-    # dvmdostem cannot interpret ~ (tilde) as the home directory
-    if "~" in args.input_path:
-        args.input_path = args.input_path.replace("~", HOME)
-
-    _modify_config(CONFIG_PATH)
-    _map_input_files(CONFIG_PATH, args.input_path)
+        print("config.js is updated according to the provided input file.")
+        print(f"You can check the file with this command: cat {CONFIG_PATH}")

@@ -3,9 +3,9 @@ import textwrap
 from cmd.batch.merge import handle_batch_merge
 from cmd.batch.run import handle_batch_run
 from cmd.batch.split import handle_batch_split
-from cmd.configure.input import handle_configure
 from cmd.monitor import MonitorCommand
 from cmd.configure.init import ConfigureInitCommand
+from cmd.configure.input import ConfigureInputCommand
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         required=True,
         help="Path to the directory that contains the input files. Example: $HOME/input/four-basins",
     )
-    parser_config_input.set_defaults(func=handle_configure)
+    parser_config_input.set_defaults(func=lambda args: ConfigureInputCommand(args).execute())
 
     args = parser.parse_args()
 
