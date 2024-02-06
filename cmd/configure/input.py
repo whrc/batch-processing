@@ -45,8 +45,14 @@ class ConfigureInputCommand(BaseCommand):
                 self._args.input_path += "/"
             io_json[key] = self._args.input_path + file_name
 
+        io_json["parameter_dir"] = f"{os.getenv('HOME')}/dvm-dos-tem/parameters/"
+        io_json["output_dir"] = f"/mnt/exacloud/{os.getenv('USER')}/output/"
+        io_json[
+            "output_spec_file"
+        ] = f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv"
+
         with open(CONFIG_PATH, "w") as file:
             json.dump(config, file, indent=2)
 
         print("config.js is updated according to the provided input file.")
-        print(f"You can check the file with this command: cat {CONFIG_PATH}")
+        print(f"You can check the file via: cat {CONFIG_PATH}")

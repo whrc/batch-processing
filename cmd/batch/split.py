@@ -97,9 +97,7 @@ class BatchSplitCommand(BaseCommand):
 
             print(f"Copy run mask, config file, etc for batch {batch_id}")
             shutil.copy(BASE_RUNMASK, work_dir + f"/batch-{batch_id}/")
-            shutil.copy(
-                self._config_file_path, work_dir + f"/batch-{batch_id}/"
-            )
+            shutil.copy(self._config_file_path, work_dir + f"/batch-{batch_id}/")
 
             print(f"Reset the run mask for batch {batch_id}")
             with nc.Dataset(
@@ -167,9 +165,7 @@ class BatchSplitCommand(BaseCommand):
         # SUBMIT SBATCH SCRIPT FOR EACH BATCH
         #
         for batch in range(0, number_batches):
-            with nc.Dataset(
-                work_dir + f"/batch-{batch}/run-mask.nc", "r"
-            ) as runmask:
+            with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
                 cells_in_batch = np.count_nonzero(runmask.variables["run"])
 
             assert cells_in_batch > 0, "PROBLEM! Groups with no cells activated to run!"
@@ -183,6 +179,9 @@ class BatchSplitCommand(BaseCommand):
 
         # Partition specification
         #SBATCH -p {self._args.slurm_partition}
+
+        # Log the output
+        #SBATCH -o /mnt/exacloud/{os.getenv('USER')}/slurm-logs/batch-{batch}.out
 
         # Number of MPI tasks
         #SBATCH -N 1

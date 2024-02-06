@@ -4,12 +4,9 @@ from pathlib import Path
 
 from batch_processing.constants import (
     BUCKET_OUTPUT_SPEC,
-    CONFIG_PATH,
     DVMDOSTEM_BIN_PATH,
     EXACLOUD_USER_DIR,
-    OUTPUT_PATH,
     OUTPUT_SPEC_PATH,
-    SLURM_LOG_PATH,
     USER,
 )
 from batch_processing.utils import download_directory, run_command
@@ -26,10 +23,14 @@ class ConfigureInitCommand(BaseCommand):
             raise ValueError("Do not run as root or with sudo.")
 
         # Copy necessary files from the cloud
+        print("Copying dvm-dos-tem to the home directory...")
         download_directory("slurm-homefs", "dvm-dos-tem/")
         print(f"dvm-dos-tem is copied to {os.getenv('HOME')}")
         # run_command(["gsutil", "-m", "cp", "-r", BUCKET_DVMDOSTEM, HOME])
         run_command(["chmod", "+x", DVMDOSTEM_BIN_PATH])
+
+        # todo: sometimes gsutil throws an error because of the invalid binary
+        # therefore, it is better to use the Python client library for this operation
         run_command(
             [
                 "gsutil",
@@ -57,23 +58,14 @@ class ConfigureInitCommand(BaseCommand):
                 f"The input data is successfully copied from Google Bucket to {self._input_dir}"
             )
 
-        Path(SLURM_LOG_PATH).mkdir(exist_ok=True)
-        # run_command(["sudo", "mkdir", "-p", SLURM_LOG_PATH])
+        Path(f"/mnt/exacloud/{os.getenv('USER')}/slurm-logs").mkdir(exist_ok=True)
+        print(
+            f"slurm-logs directory is created under /mnt/exacloud/{os.getenv('USER')}"
+        )
 
         run_command(["lfs", "setstripe", "-S", "0.25M", EXACLOUD_USER_DIR])
 
-        # Modify `output_dir` field in the configuration file
-        # todo: move this operation to cmd/input.py file
-        run_command(
-            [
-                "sed",
-                "-i",
-                f's|"output_dir":\s*"output/",|"output_dir": "{OUTPUT_PATH}",|',
-                CONFIG_PATH,
-            ]
-        )
-
-        print("The initialization is successfully completed.")
+        print("\nThe initialization is successfully completed.")
         print(
-            f"Check /home/{os.getenv('USER')} and /mnt/exacloud/{os.getenv('USER')} for the changes."
+            f"Check /home/{os.getenv('USER')} and /mnt/exacloud/{os.getenv('USER')} for the changes.\n"
         )
