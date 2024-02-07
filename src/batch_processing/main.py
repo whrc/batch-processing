@@ -1,12 +1,12 @@
 import argparse
 import textwrap
-from cmd.batch.merge import handle_batch_merge
-from cmd.batch.run import handle_batch_run
-from cmd.batch.split import BatchSplitCommand
-from cmd.configure.init import ConfigureInitCommand
-from cmd.configure.input import ConfigureInputCommand
-from cmd.monitor import MonitorCommand
-from cmd.elapsed import ElapsedCommand
+from batch_processing.cmd.batch.merge import handle_batch_merge
+from batch_processing.cmd.batch.run import handle_batch_run
+from batch_processing.cmd.batch.split import BatchSplitCommand
+from batch_processing.cmd.configure.init import ConfigureInitCommand
+from batch_processing.cmd.configure.input import ConfigureInputCommand
+from batch_processing.cmd.monitor import MonitorCommand
+from batch_processing.cmd.elapsed import ElapsedCommand
 
 
 def main():

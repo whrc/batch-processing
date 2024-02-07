@@ -1,6 +1,6 @@
 import subprocess
 import time
-from cmd.base import BaseCommand
+from batch_processing.cmd.base import BaseCommand
 from datetime import datetime
 
 

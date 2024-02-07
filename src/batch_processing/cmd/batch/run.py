@@ -19,4 +19,5 @@ def submit_batches():
 
 
 def handle_batch_run(args):
+    # todo: add a progress bar like split.py
     submit_batches()

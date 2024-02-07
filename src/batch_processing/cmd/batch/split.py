@@ -3,12 +3,12 @@ import os
 import re
 import shutil
 import textwrap
-from cmd.base import BaseCommand
+from batch_processing.cmd.base import BaseCommand
 
 import netCDF4 as nc
 import numpy as np
 
-from utils.utils import mkdir_p
+from batch_processing.utils.utils import mkdir_p
 
 # This script is used to split a dvmdostem run into "sub domains" that can be
 # run individually (submitted to the queue manager) and then merged together
