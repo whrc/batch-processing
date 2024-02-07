@@ -6,6 +6,7 @@ from cmd.batch.split import BatchSplitCommand
 from cmd.configure.init import ConfigureInitCommand
 from cmd.configure.input import ConfigureInputCommand
 from cmd.monitor import MonitorCommand
+from cmd.elapsed import ElapsedCommand
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -102,6 +103,7 @@ if __name__ == "__main__":
     parser_config_init = config_subparsers.add_parser(
         "init", help="Initialize the Slurm working environment"
     )
+    # todo: add another flag for to save the output folder in a custom name
     parser_config_init.add_argument(
         "-d",
         "--input-data",
@@ -123,6 +125,9 @@ if __name__ == "__main__":
     parser_config_input.set_defaults(
         func=lambda args: ConfigureInputCommand(args).execute()
     )
+
+    parser_elapsed = subparsers.add_parser("elapsed", help="Measures the total elapsed time for running a dataset")
+    parser_elapsed.set_defaults(func=lambda args: ElapsedCommand(args).execute())
 
     args = parser.parse_args()
 
