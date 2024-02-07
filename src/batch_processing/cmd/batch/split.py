@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import textwrap
+from progress.bar import Bar
 from batch_processing.cmd.base import BaseCommand
 
 import netCDF4 as nc
@@ -92,21 +93,25 @@ class BatchSplitCommand(BaseCommand):
         if os.path.isdir(BASE_OUTDIR + "/batch-run"):
             shutil.rmtree(BASE_OUTDIR + "/batch-run")
 
+        bar = Bar("Setting up the batches", max=nbatches)
         for batch_id in range(0, nbatches):
-            print(f"Making directories for batch {batch_id}")
+            # print(f"Making directories for batch {batch_id}")
             mkdir_p(BASE_OUTDIR + f"/batch-run/batch-{batch_id}")
 
             work_dir = BASE_OUTDIR + "/batch-run"
 
-            print(f"Copy run mask, config file, etc for batch {batch_id}")
+            # print(f"Copy run mask, config file, etc for batch {batch_id}")
             shutil.copy(BASE_RUNMASK, work_dir + f"/batch-{batch_id}/")
             shutil.copy(self._config_file_path, work_dir + f"/batch-{batch_id}/")
 
-            print(f"Reset the run mask for batch {batch_id}")
+            # print(f"Reset the run mask for batch {batch_id}")
             with nc.Dataset(
                 work_dir + f"/batch-{batch_id}/run-mask.nc", "a"
             ) as runmask:
                 runmask.variables["run"][:] = np.zeros(runmask.variables["run"].shape)
+            bar.next()
+
+        bar.finish()
 
         #
         # BUILD BATCH SPECIFIC RUN-MASKS
@@ -118,7 +123,7 @@ class BatchSplitCommand(BaseCommand):
         # For every cell that is turned on in the main run-mask, we assign this cell
         # to a batch to be run, and turn on the corresponding cell in the batch's
         # run mask.
-        print("Turning on pixels in each batch's run mask...")
+        bar = Bar("Turning on pixels in each batch's run mask", max=len(coord_list))
         batch = 0
         cells_in_sublist = 0
         coord_list = list(zip(nz_ycoords, nz_xcoords))
@@ -132,9 +137,12 @@ class BatchSplitCommand(BaseCommand):
             if (cells_in_sublist == self._cells_per_batch) or (
                 i == len(coord_list) - 1
             ):
-                print(f"Group {batch} will run {cells_in_sublist} cells...")
+                # print(f"Group {batch} will run {cells_in_sublist} cells...")
                 batch += 1
                 cells_in_sublist = 0
+            bar.next()
+        
+        bar.finish()
 
         #
         # SUMMARIZE
@@ -167,6 +175,7 @@ class BatchSplitCommand(BaseCommand):
         #
         # SUBMIT SBATCH SCRIPT FOR EACH BATCH
         #
+        bar = Bar("Writing sbatch script for each batch", max=number_batches)
         for batch in range(0, number_batches):
             with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
                 cells_in_batch = np.count_nonzero(runmask.variables["run"])
@@ -204,9 +213,13 @@ class BatchSplitCommand(BaseCommand):
         mpirun ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l disabled --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
         """.format(batch, cells_in_batch, work_dir)
             )
-            print(f"Writing sbatch script for batch {batch}")
+            # print(f"Writing sbatch script for batch {batch}")
             with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
                 f.write(slurm_runner_scriptlet)
+
+            bar.next()
+        
+        bar.finish()
 
         print("Split operation is completed.")
         print(

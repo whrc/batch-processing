@@ -3,3 +3,4 @@ numpy==1.23.3
 google-cloud-compute==1.15.0
 google-cloud-storage==2.14.0
 ruff==0.1.13
+progress==1.6
