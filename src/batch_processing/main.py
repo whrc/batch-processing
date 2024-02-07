@@ -11,11 +11,11 @@ from batch_processing.cmd.elapsed import ElapsedCommand
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="batch-processing",
+        prog="bp",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(
             """
-            This is a specialized internal tool designed for scientists at the Woodwell Climate Research Center.
+            bp (or batch-processing) is a specialized internal tool designed for scientists at the Woodwell Climate Research Center.
 
             Optimized for execution in the GCP (Google Cloud Platform) cluster, this tool streamlines the process of setting up 
             and managing Slurm-based computational environments. It simplifies tasks such as configuring run parameters, 
@@ -24,7 +24,7 @@ def main():
             Its primary aim is to enhance productivity and reduce manual setup overhead in complex data processing workflows, 
             specifically tailored to the needs of climate research and analysis."""
         ),
-        epilog="Use batch-processing <command> --help for detailed help.",
+        epilog="Use bp <command> --help for detailed help.",
         add_help=False,
     )
     parser.add_argument(
