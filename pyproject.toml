@@ -26,7 +26,7 @@ Homepage = "https://github.com/whrc/batch-processing"
 dependencies = { file = ["requirements.txt"] }
 
 [project.scripts]
-bp = "batch_processing:main"
+bp = "batch_processing:main.main"
 
 [tool.ruff]
 select = [
