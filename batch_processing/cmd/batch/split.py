@@ -8,7 +8,7 @@ from cmd.base import BaseCommand
 import netCDF4 as nc
 import numpy as np
 
-from batch_processing.utils import mkdir_p
+from utils.utils import mkdir_p
 
 # This script is used to split a dvmdostem run into "sub domains" that can be
 # run individually (submitted to the queue manager) and then merged together
@@ -50,6 +50,9 @@ class BatchSplitCommand(BaseCommand):
         self._cells_per_batch = self._args.cells_per_batch
         self._config_file_path = f"{os.getenv('HOME')}/dvm-dos-tem/config/config.js"
 
+    # todo: we might create a progress bar for this since it takes
+    # quite some time for a bigger input datasets and we don't want
+    # to drown the terminal with the same output
     def execute(self):
         # Look in the config file to figure out where the full-domain runmask is.
         with open(self._config_file_path) as f:

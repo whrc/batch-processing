@@ -3,7 +3,7 @@ import os
 import re
 from cmd.base import BaseCommand
 
-from batch_processing.constants import CONFIG_PATH
+from utils.constants import CONFIG_PATH
 
 
 class ConfigureInputCommand(BaseCommand):

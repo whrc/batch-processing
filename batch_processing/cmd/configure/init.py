@@ -2,14 +2,14 @@ import os
 from cmd.base import BaseCommand
 from pathlib import Path
 
-from batch_processing.constants import (
+from utils.constants import (
     BUCKET_OUTPUT_SPEC,
     DVMDOSTEM_BIN_PATH,
     EXACLOUD_USER_DIR,
     OUTPUT_SPEC_PATH,
     USER,
 )
-from batch_processing.utils import download_directory, run_command
+from utils.utils import download_directory, run_command
 
 
 class ConfigureInitCommand(BaseCommand):

@@ -83,7 +83,7 @@ def handle_special_files(batch_dir, final_dir, filename, operation):
         elif operation == "cat":
             with open(f"{final_dir}/{filename}", "a") as outfile:
                 for f in filelist:
-                    with open(f, "r") as infile:
+                    with open(f) as infile:
                         outfile.write(infile.read())
     else:
         print(f"nothing to do - no {filename} files found?")
@@ -97,8 +97,8 @@ def handle_batch_merge(args):
     stages = ["eq", "sp", "tr", "sc"]
     res_stages = ["pr", "eq", "sp", "tr", "sc"]
     timesteps = ["daily", "monthly", "yearly"]
-    batch_dir = "{}/output/batch-run".format(output_dir_prefix)
-    final_dir = "{}/all-merged".format(output_dir_prefix)
+    batch_dir = f"{output_dir_prefix}/output/batch-run"
+    final_dir = f"{output_dir_prefix}/all-merged"
 
     merge_files(
         output_dir_prefix,
