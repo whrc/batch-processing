@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import shutil
@@ -8,6 +7,7 @@ from batch_processing.cmd.base import BaseCommand
 
 import netCDF4 as nc
 import numpy as np
+import json
 
 from batch_processing.utils.utils import mkdir_p
 
