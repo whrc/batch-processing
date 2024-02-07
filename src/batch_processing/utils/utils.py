@@ -1,17 +1,17 @@
+import errno
 import os
 import subprocess
-import errno
 from pathlib import Path
 
 from google.cloud import storage
 
 
-def run_command(command):
+def run_command(command: list) -> None:
     """Executes a shell command."""
     subprocess.run(command, check=True)
 
 
-def mkdir_p(path):
+def mkdir_p(path: str) -> None:
     """Provides similar functionality to bash mkdir -p"""
     try:
         os.makedirs(path)
@@ -48,3 +48,24 @@ def download_directory(bucket_name: str, prefix: str) -> None:
         absolute_directory = f"{os.getenv('HOME')}/{directory}"
         Path(absolute_directory).mkdir(parents=True, exist_ok=True)
         blob.download_to_filename(f"{os.getenv('HOME')}/{blob.name}")
+
+
+def download_file(bucket_name: str, blob_name: str, output_file_name: str) -> None:
+    """
+    Downloads a file from a Google Cloud Storage bucket to a local file.
+
+    This function retrieves a blob from the specified bucket in Google Cloud Storage
+    and downloads it to a local file. The local file is saved with the specified output
+    file name.
+
+    Parameters:
+    - bucket_name (str): The name of the Google Cloud Storage bucket from which to
+    download the file.
+    - blob_name (str): The name of the blob (file) within the bucket to download.
+    - output_file_name (str): The name (including path) under which the file should be
+    saved locally.
+    """
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.get_blob(blob_name)
+    blob.download_to_filename(output_file_name)

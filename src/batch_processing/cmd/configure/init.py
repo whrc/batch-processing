@@ -9,7 +9,7 @@ from batch_processing.utils.constants import (
     OUTPUT_SPEC_PATH,
     USER,
 )
-from batch_processing.utils.utils import download_directory, run_command
+from batch_processing.utils.utils import download_directory, run_command, download_file
 
 
 class ConfigureInitCommand(BaseCommand):
@@ -29,17 +29,7 @@ class ConfigureInitCommand(BaseCommand):
         # run_command(["gsutil", "-m", "cp", "-r", BUCKET_DVMDOSTEM, HOME])
         run_command(["chmod", "+x", DVMDOSTEM_BIN_PATH])
 
-        # todo: sometimes gsutil throws an error because of the invalid binary
-        # therefore, it is better to use the Python client library for this operation
-        run_command(
-            [
-                "gsutil",
-                "-m",
-                "cp",
-                BUCKET_OUTPUT_SPEC,
-                OUTPUT_SPEC_PATH,
-            ]
-        )
+        download_file("four-basins", "all-merged/config/output_spec.csv", f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv")
         print(f"output_spec.csv is copied to {OUTPUT_SPEC_PATH}")
 
         run_command(["sudo", "-H", "mkdir", "-p", EXACLOUD_USER_DIR])
