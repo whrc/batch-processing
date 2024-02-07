@@ -1,6 +1,6 @@
-# [build-system]
-# build-backend = "flit_core.buildapi"
-# requires = ["flit_core >=3.8.0,<4"]
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "batch-processing"
@@ -13,12 +13,20 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Operating System :: OS Independent",
+    "Operating System :: Unix/macOS",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
 ]
-dependencies = ["numpy", "netCDF4", "ruff"]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/whrc/batch-processing"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[project.scripts]
+bp = "batch_processing:main"
 
 [tool.ruff]
 select = [

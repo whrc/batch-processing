@@ -8,7 +8,8 @@ from cmd.configure.input import ConfigureInputCommand
 from cmd.monitor import MonitorCommand
 from cmd.elapsed import ElapsedCommand
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(
         prog="batch-processing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
