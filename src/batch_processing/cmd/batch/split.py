@@ -1,14 +1,14 @@
+import json
 import os
 import re
 import shutil
 import textwrap
-from progress.bar import Bar
-from batch_processing.cmd.base import BaseCommand
 
 import netCDF4 as nc
 import numpy as np
-import json
+from progress.bar import Bar
 
+from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import mkdir_p
 
 # This script is used to split a dvmdostem run into "sub domains" that can be
@@ -52,7 +52,7 @@ class BatchSplitCommand(BaseCommand):
         self._config_file_path = f"{os.getenv('HOME')}/dvm-dos-tem/config/config.js"
 
     # todo: we might create a progress bar for this since it takes
-    # quite some time for a bigger input datasets and we don't want
+    # quite some time for a bigger input datasets and we don't want
     # to drown the terminal with the same output
     def execute(self):
         # Look in the config file to figure out where the full-domain runmask is.
@@ -67,13 +67,13 @@ class BatchSplitCommand(BaseCommand):
         with nc.Dataset(BASE_RUNMASK, "r") as runmask:
             TOTAL_CELLS_TO_RUN = np.count_nonzero(runmask.variables["run"])
             print(f"Total cells to run: {TOTAL_CELLS_TO_RUN}")
-            runmasklist = runmask.variables["run"][:, :].flatten()
-            runmaskreversed = runmasklist[::-1]
-            last_cell_index = len(runmaskreversed) - np.argmax(runmaskreversed) - 1
+            # runmasklist = runmask.variables["run"][:, :].flatten()
+            # runmaskreversed = runmasklist[::-1]
+            # last_cell_index = len(runmaskreversed) - np.argmax(runmaskreversed) - 1
             # Padded due to the fact that this allows for discontiguous runs
             #  while accounting for the fact that cell assignment is very
             #  rigid in the model
-            padded_cell_count = last_cell_index + 1
+            # padded_cell_count = last_cell_index + 1
 
         # nbatches = padded_cell_count / self._cells_per_batch
         nbatches = TOTAL_CELLS_TO_RUN / self._cells_per_batch
@@ -123,10 +123,10 @@ class BatchSplitCommand(BaseCommand):
         # For every cell that is turned on in the main run-mask, we assign this cell
         # to a batch to be run, and turn on the corresponding cell in the batch's
         # run mask.
-        bar = Bar("Turning on pixels in each batch's run mask", max=len(coord_list))
         batch = 0
         cells_in_sublist = 0
         coord_list = list(zip(nz_ycoords, nz_xcoords))
+        bar = Bar("Turning on pixels in each batch's run mask", max=nbatches)
         for i, cell in enumerate(coord_list):
             with nc.Dataset(
                 work_dir + f"/batch-{batch}/run-mask.nc", "a"
@@ -140,15 +140,17 @@ class BatchSplitCommand(BaseCommand):
                 # print(f"Group {batch} will run {cells_in_sublist} cells...")
                 batch += 1
                 cells_in_sublist = 0
-            bar.next()
-        
+                bar.next()
+
         bar.finish()
 
         #
         # SUMMARIZE
         #
         number_batches = batch
-        # assert (nbatches == number_batches), "PROBLEM: Something is wrong with the batch numbers: {} vs {}".format(nbatches, number_batches)
+        # assert (
+        #     nbatches == number_batches
+        # ), f"PROBLEM: Something is wrong with the batch numbers: {nbatches} vs {number_batches}"
         print(f"Split cells into {number_batches} batches...")
 
         #
@@ -207,7 +209,7 @@ class BatchSplitCommand(BaseCommand):
         . /dependencies/setup-env.sh
         . /etc/profile.d/z00_lmod.sh
         module load openmpi
-        
+
         cd /home/$USER/dvm-dos-tem
 
         mpirun ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l disabled --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
@@ -218,7 +220,7 @@ class BatchSplitCommand(BaseCommand):
                 f.write(slurm_runner_scriptlet)
 
             bar.next()
-        
+
         bar.finish()
 
         print("Split operation is completed.")
