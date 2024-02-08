@@ -1,12 +1,13 @@
 import argparse
 import textwrap
+
 from batch_processing.cmd.batch.merge import handle_batch_merge
-from batch_processing.cmd.batch.run import handle_batch_run
+from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
 from batch_processing.cmd.configure.init import ConfigureInitCommand
 from batch_processing.cmd.configure.input import ConfigureInputCommand
-from batch_processing.cmd.monitor import MonitorCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
+from batch_processing.cmd.monitor import MonitorCommand
 
 
 def main():
@@ -15,14 +16,18 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(
             """
-            bp (or batch-processing) is a specialized internal tool designed for scientists at the Woodwell Climate Research Center.
+            bp (or batch-processing) is a specialized internal tool designed for
+            scientists at the Woodwell Climate Research Center.
 
-            Optimized for execution in the GCP (Google Cloud Platform) cluster, this tool streamlines the process of setting up 
-            and managing Slurm-based computational environments. It simplifies tasks such as configuring run parameters, 
-            partitioning input data into manageable batches, and executing these batches efficiently.
+            Optimized for execution in the GCP (Google Cloud Platform) cluster,
+            this tool streamlines the process of setting up and managing Slurm-based
+            computational environments. It simplifies tasks such as configuring run
+            parameters, partitioning input data into manageable batches, and executing
+            these batches efficiently.
 
-            Its primary aim is to enhance productivity and reduce manual setup overhead in complex data processing workflows, 
-            specifically tailored to the needs of climate research and analysis."""
+            Its primary aim is to enhance productivity and reduce manual setup
+            overhead in complex data processing workflows, specifically tailored
+            to the needs of climate research and analysis."""
         ),
         epilog="Use bp <command> --help for detailed help.",
         add_help=False,
@@ -74,7 +79,7 @@ def main():
     parser_batch_run = batch_subparsers.add_parser(
         "run", help="Submit the batches to the Slurm queue"
     )
-    parser_batch_run.set_defaults(func=handle_batch_run)
+    parser_batch_run.set_defaults(func=lambda args: BatchRunCommand(args).execute())
 
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
@@ -83,7 +88,10 @@ def main():
 
     parser_monitoring = subparsers.add_parser(
         "monitor",
-        help="Monitors the batches and if there is an unfinished job, it resubmits that.",
+        help=(
+            "Monitors the batches and if there is an unfinished job,"
+            "it resubmits that."
+        ),
     )
     group = parser_monitoring.add_mutually_exclusive_group(required=True)
     group.add_argument(
@@ -104,11 +112,14 @@ def main():
     parser_config_init = config_subparsers.add_parser(
         "init", help="Initialize the Slurm working environment"
     )
-    # todo: add another flag for to save the output folder in a custom name
+    # todo: add another flag for to save the output folder in a custom name
     parser_config_init.add_argument(
         "-d",
         "--input-data",
-        help="An absolute path of the data folder in the Google Bucket. Example: gs://iem-dataset/uaem-quick-datashare",
+        help=(
+            "An absolute path of the data folder in the Google Bucket."
+            "Example: gs://iem-dataset/uaem-quick-datashare"
+        ),
     )
     parser_config_init.set_defaults(
         func=lambda args: ConfigureInitCommand(args).execute()
@@ -121,13 +132,18 @@ def main():
         "-i",
         "--input-path",
         required=True,
-        help="Path to the directory that contains the input files. Example: $HOME/input/four-basins",
+        help=(
+            "Path to the directory that contains the input files."
+            "Example: $HOME/input/four-basins"
+        ),
     )
     parser_config_input.set_defaults(
         func=lambda args: ConfigureInputCommand(args).execute()
     )
 
-    parser_elapsed = subparsers.add_parser("elapsed", help="Measures the total elapsed time for running a dataset")
+    parser_elapsed = subparsers.add_parser(
+        "elapsed", help="Measures the total elapsed time for running a dataset"
+    )
     parser_elapsed.set_defaults(func=lambda args: ElapsedCommand(args).execute())
 
     args = parser.parse_args()
