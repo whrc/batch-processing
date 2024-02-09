@@ -29,7 +29,7 @@ dependencies = { file = ["requirements.txt"] }
 bp = "batch_processing:main.main"
 
 [tool.ruff]
-select = [
+lint.select = [
     "E",  # pycodestyle
     "F",  # pyflakes
     "UP", # pyupgrade,
