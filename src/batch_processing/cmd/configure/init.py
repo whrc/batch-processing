@@ -1,15 +1,14 @@
 import os
-from batch_processing.cmd.base import BaseCommand
 from pathlib import Path
 
+from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.constants import (
-    BUCKET_OUTPUT_SPEC,
     DVMDOSTEM_BIN_PATH,
     EXACLOUD_USER_DIR,
     OUTPUT_SPEC_PATH,
     USER,
 )
-from batch_processing.utils.utils import download_directory, run_command, download_file
+from batch_processing.utils.utils import download_directory, download_file, run_command
 
 
 class ConfigureInitCommand(BaseCommand):
@@ -29,13 +28,18 @@ class ConfigureInitCommand(BaseCommand):
         # run_command(["gsutil", "-m", "cp", "-r", BUCKET_DVMDOSTEM, HOME])
         run_command(["chmod", "+x", DVMDOSTEM_BIN_PATH])
 
-        download_file("four-basins", "all-merged/config/output_spec.csv", f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv")
+        download_file(
+            "four-basins",
+            "all-merged/config/output_spec.csv",
+            f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv",
+        )
         print(f"output_spec.csv is copied to {OUTPUT_SPEC_PATH}")
 
         run_command(["sudo", "-H", "mkdir", "-p", EXACLOUD_USER_DIR])
         run_command(["sudo", "-H", "chown", "-R", f"{USER}:{USER}", EXACLOUD_USER_DIR])
         print(
-            f"A new directory is created for the current user, {os.getenv('USER')} in /mnt/exacloud"
+            "A new directory is created for the current user, "
+            f"{os.getenv('USER')} in /mnt/exacloud"
         )
 
         data = self._args.input_data
@@ -45,7 +49,8 @@ class ConfigureInitCommand(BaseCommand):
             # download_directory(args.bucket_name, args.prefix)
             run_command(["gsutil", "-m", "cp", "-r", data, self._input_dir])
             print(
-                f"The input data is successfully copied from Google Bucket to {self._input_dir}"
+                "The input data is successfully copied "
+                f"from Google Bucket to {self._input_dir}"
             )
 
         Path(f"/mnt/exacloud/{os.getenv('USER')}/slurm-logs").mkdir(exist_ok=True)
@@ -57,5 +62,6 @@ class ConfigureInitCommand(BaseCommand):
 
         print("\nThe initialization is successfully completed.")
         print(
-            f"Check /home/{os.getenv('USER')} and /mnt/exacloud/{os.getenv('USER')} for the changes.\n"
+            f"Check /home/{os.getenv('USER')} and "
+            f"/mnt/exacloud/{os.getenv('USER')} for the changes.\n"
         )

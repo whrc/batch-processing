@@ -1,9 +1,10 @@
 import json
 import os
 import re
-from batch_processing.cmd.base import BaseCommand
 
+from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.constants import CONFIG_PATH
+
 
 class ConfigureInputCommand(BaseCommand):
     IO_FILE_KEYS = [
