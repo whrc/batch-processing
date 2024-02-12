@@ -9,21 +9,19 @@ class InitCommand(BaseCommand):
         super().__init__()
         self._args = args
 
-    # todo: put the necessary files in a dedicated bucket
-    # and pull from there
     def execute(self):
         if self.user == "root":
             raise ValueError("Do not run as root or with sudo.")
 
         # Copy necessary files from the cloud
         print("Copying dvm-dos-tem to the home directory...")
-        download_directory("slurm-homefs", "dvm-dos-tem/")
+        download_directory("gcp-slurm", "dvm-dos-tem/")
         print(f"dvm-dos-tem is copied to {self.home_dir}")
         run_command(["chmod", "+x", self.dvmdostem_bin_path])
 
         download_file(
-            "four-basins",
-            "all-merged/config/output_spec.csv",
+            "gcp-slurm",
+            "output_spec.csv",
             self.output_spec_path,
         )
         print(f"output_spec.csv is copied to {self.output_spec_path}")
