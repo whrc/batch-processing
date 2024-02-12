@@ -11,7 +11,7 @@ from batch_processing.utils.constants import (
 from batch_processing.utils.utils import download_directory, download_file, run_command
 
 
-class ConfigureInitCommand(BaseCommand):
+class InitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args

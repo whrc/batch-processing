@@ -6,7 +6,7 @@ from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.constants import CONFIG_PATH
 
 
-class ConfigureInputCommand(BaseCommand):
+class InputCommand(BaseCommand):
     IO_FILE_KEYS = [
         "hist_climate_file",
         "proj_climate_file",

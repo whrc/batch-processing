@@ -4,9 +4,9 @@ import textwrap
 from batch_processing.cmd.batch.merge import handle_batch_merge
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
-from batch_processing.cmd.configure.init import ConfigureInitCommand
-from batch_processing.cmd.configure.input import ConfigureInputCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
+from batch_processing.cmd.init import InitCommand
+from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
 
 
@@ -102,18 +102,10 @@ def main():
     )
     parser_monitoring.set_defaults(func=lambda args: MonitorCommand(args).execute())
 
-    parser_config = subparsers.add_parser(
-        "configure", help="Configuration related operations"
+    parser_init = subparsers.add_parser(
+        "init", help="Initialize the environment for running the simulation"
     )
-    config_subparsers = parser_config.add_subparsers(
-        title="Available commands", metavar=""
-    )
-
-    parser_config_init = config_subparsers.add_parser(
-        "init", help="Initialize the Slurm working environment"
-    )
-    # todo: add another flag for to save the output folder in a custom name
-    parser_config_init.add_argument(
+    parser_init.add_argument.add_argument(
         "-d",
         "--input-data",
         help=(
@@ -121,14 +113,13 @@ def main():
             "Example: gs://iem-dataset/uaem-quick-datashare"
         ),
     )
-    parser_config_init.set_defaults(
-        func=lambda args: ConfigureInitCommand(args).execute()
+    parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
+
+    parser_input = subparsers.add_parser(
+        "input", help="Modify config.js file according to the provided input path"
     )
 
-    parser_config_input = config_subparsers.add_parser(
-        "input", help="Configure the input data"
-    )
-    parser_config_input.add_argument(
+    parser_input.add_argument(
         "-i",
         "--input-path",
         required=True,
@@ -137,9 +128,7 @@ def main():
             "Example: $HOME/input/four-basins"
         ),
     )
-    parser_config_input.set_defaults(
-        func=lambda args: ConfigureInputCommand(args).execute()
-    )
+    parser_input.set_defaults(func=lambda args: InputCommand(args).execute())
 
     parser_elapsed = subparsers.add_parser(
         "elapsed", help="Measures the total elapsed time for running a dataset"
