@@ -115,7 +115,7 @@ def main():
     parser_init = subparsers.add_parser(
         "init", help="Initialize the environment for running the simulation"
     )
-    parser_init.add_argument.add_argument(
+    parser_init.add_argument(
         "-d",
         "--input-data",
         help=(
