@@ -32,6 +32,8 @@ class InputCommand(BaseCommand):
         with open(self.config_path) as file:
             file_content = file.read()
 
+        # the config file contains comments which are not valid
+        # therefore, we are removing them before parsing
         config = json.loads(re.sub("//.*\n", "\n", file_content))
 
         io_json = config["IO"]
@@ -42,8 +44,8 @@ class InputCommand(BaseCommand):
                 self._args.input_path += "/"
             io_json[key] = self._args.input_path + file_name
 
-        io_json["parameter_dir"] = f"{self.home_dir}/dvm-dos-tem/parameters/"
-        io_json["output_dir"] = f"/mnt/exacloud/{self.user}/output"
+        io_json["parameter_dir"] = self.parameters_path
+        io_json["output_dir"] = self.output_dir
         io_json["output_spec_file"] = self.output_spec_path
 
         with open(self.config_path, "w") as file:
