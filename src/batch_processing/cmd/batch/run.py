@@ -11,13 +11,15 @@ class BatchRunCommand(BaseCommand):
         self._args = args
 
     def execute(self):
-        BATCH_DIR = f"/mnt/exacloud/{self.user}/output/batch-run"
-        full_paths = [os.path.join(BATCH_DIR, item) for item in os.listdir(BATCH_DIR)]
+        full_paths = [
+            os.path.join(self.batch_dir, item) for item in os.listdir(self.batch_dir)
+        ]
         total_batches = sum(1 for path in full_paths if os.path.isdir(path))
 
+        # fix the outputting error
         bar = Bar("Submitting batches", max=total_batches)
         for index in range(0, total_batches):
-            slurm_script_path = f"{BATCH_DIR}/batch-{index}/slurm_runner.sh"
+            slurm_script_path = f"{self.batch_dir}/batch-{index}/slurm_runner.sh"
             run_command(["sbatch", slurm_script_path, ">", "/dev/null"])
             bar.next()
 

@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 
+# todo: refactor this file
 def merge_files(
     output_dir_prefix,
     output_spec_path,
