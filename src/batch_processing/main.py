@@ -100,6 +100,16 @@ def main():
     group.add_argument(
         "--stop", action="store_true", help="Stops the monitoring process"
     )
+    parser_monitoring.add_argument(
+        "-c",
+        "--instance-count",
+        type=int,
+        required=True,
+        help=(
+            "The maximum amount of available machines in the cluster."
+            "It can be found by 'sinfo' command"
+        ),
+    )
     parser_monitoring.set_defaults(func=lambda args: MonitorCommand(args).execute())
 
     parser_init = subparsers.add_parser(
