@@ -11,8 +11,7 @@ class ElapsedCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
-        # move this to exacloud file system
-        self._file_path = "/home/dteber_woodwellclimate_org/elapsed_time.txt"
+        self._file_path = f"{self.exacloud_user_dir}/elapsed_time.txt"
         self._sleep_time = 10
 
     def get_now_and_write(self, s: str):
