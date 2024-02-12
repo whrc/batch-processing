@@ -22,12 +22,12 @@ def mkdir_p(path: str) -> None:
             raise
 
 
-def download_directory(bucket_name: str, prefix: str) -> None:
+def download_directory(bucket_name: str, blob_name: str) -> None:
     """Downloads a directory from Google Cloud Storage.
 
     Args:
         bucket_name (str): Bucket name
-        prefix (str): The full path of the desired directory
+        blob_name (str): The full path of the desired directory
 
     Example:
         Consider the below `gsutil URI`:
@@ -35,11 +35,11 @@ def download_directory(bucket_name: str, prefix: str) -> None:
         gs://wcrc-tfstate-9486302/slurm-lustre-dvmdostem-v5/slurm-lustre-dvmdostem-v5/primary
 
         In the above URI, `wcrc-tfstate-9486302` is the bucket name and
-        `slurm-lustre-dvmdostem-v5/slurm-lustre-dvmdostem-v5/primary` is the prefix.
+        `slurm-lustre-dvmdostem-v5/slurm-lustre-dvmdostem-v5/primary` is the blob_name.
     """
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=prefix)
+    blobs = bucket.list_blobs(prefix=blob_name)
     for blob in blobs:
         if blob.name.endswith("/"):
             continue

@@ -45,9 +45,11 @@ class InitCommand(BaseCommand):
         data = self._args.input_data
         if data:
             Path(self.input_dir).mkdir(exist_ok=True)
-            # todo: take `bucket_name` and `prefix` as arguments
-            # download_directory(args.bucket_name, args.prefix)
-            run_command(["gsutil", "-m", "cp", "-r", data, self.input_dir])
+
+            data = data.replace("gs://", "").split("/")
+            bucket_name = data[0]
+            blob_name = data[1:]
+            download_directory(bucket_name, blob_name)
             print(
                 "The input data is successfully copied "
                 f"from Google Bucket to {self.input_dir}"
