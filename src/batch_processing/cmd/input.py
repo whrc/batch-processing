@@ -22,6 +22,7 @@ class InputCommand(BaseCommand):
     ]
 
     def __init__(self, args):
+        super().__init__()
         # dvmdostem cannot interpret ~ (tilde) as the home directory
         if "~" in args.input_path:
             args.input_path = args.input_path.replace("~", self.home_dir)
