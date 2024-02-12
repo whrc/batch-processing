@@ -46,7 +46,7 @@ class MonitorCommand(BaseCommand):
     def execute(self):
         if self._args.start:
             print(
-                "Monitoring has started."
+                "Monitoring has started. "
                 f"You can check {self._log_file_path} for the logs"
             )
             self._start_monitoring()
