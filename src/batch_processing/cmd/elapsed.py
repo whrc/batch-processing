@@ -26,7 +26,9 @@ class ElapsedCommand(BaseCommand):
             if pid > 0:
                 sys.exit(0)
         except OSError as e:
-            # todo: log the error
+            print(
+                f"The fork operation is failed. Couldn't created the child process: {e}"
+            )
             sys.exit(e)
 
         # continue the execution from the child process
