@@ -60,19 +60,19 @@ def main():
         help="Specificy the Slurm partition. By default, spot",
     )
     parser_batch_split.add_argument(
-        "-p", type=int, required=True, help="Number of PRE RUN years to run"
+        "-p", type=int, default=0, help="Number of PRE RUN years to run"
     )
     parser_batch_split.add_argument(
-        "-e", type=int, required=True, help="Number of EQUILIBRIUM years to run"
+        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run"
     )
     parser_batch_split.add_argument(
-        "-s", type=int, required=True, help="Number of SPINUP years to run"
+        "-s", type=int, default=0, help="Number of SPINUP years to run"
     )
     parser_batch_split.add_argument(
-        "-t", type=int, required=True, help="Number of TRANSIENT years to run"
+        "-t", type=int, default=0, help="Number of TRANSIENT years to run"
     )
     parser_batch_split.add_argument(
-        "-n", type=int, required=True, help="Number of SCENARIO years to run"
+        "-n", type=int, default=0, help="Number of SCENARIO years to run"
     )
     parser_batch_split.set_defaults(func=lambda args: BatchSplitCommand(args).execute())
 
@@ -120,7 +120,9 @@ def main():
         "--input-data",
         help=(
             "An absolute path of the data folder in the Google Bucket."
-            "Example: gs://iem-dataset/uaem-quick-datashare"
+            "Valid examples are:"
+            "gs://bucket-name/some-folder/another-folder"
+            "bucket-name/some-folder/another-folder/"
         ),
     )
     parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
