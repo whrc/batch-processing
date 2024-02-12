@@ -1,112 +1,108 @@
 import os
 import subprocess
-import sys
+
+from batch_processing.cmd.base import BaseCommand
 
 
-# todo: refactor this file
-def merge_files(
-    output_dir_prefix,
-    output_spec_path,
-    stages,
-    res_stages,
-    timesteps,
-    batch_dir,
-    final_dir,
-):
-    os.makedirs(final_dir, exist_ok=True)
-    variables = [line.split(",")[0] for line in open(output_spec_path).readlines()]
+class BatchMergeCommand(BaseCommand):
+    def __init__(self, args):
+        self._args = args
 
-    if len(sys.argv) != 1:
-        print(f"single variable: {sys.argv[1]}")
-        variables = [sys.argv[1]]
+    def execute(self):
+        STAGES = ["eq", "sp", "tr", "sc"]
+        RES_STAGES = ["pr", "eq", "sp", "tr", "sc"]
+        TIMESTEPS = ["daily", "monthly", "yearly"]
 
-    for variable in variables:
-        if variable != "Name":
-            print(f"Processing variable: {variable}")
+        os.makedirs(self.result_dir, exist_ok=True)
 
-            for stage in stages:
-                print(f"  --> stage: {stage}")
+        variables = open(self.output_spec_path).readlines()[0].split(",")[0]
 
-                for timestep in timesteps:
-                    print(f"  --> timestep: {timestep}")
+        # If merging files for a single variable
+        if len(os.sys.argv) != 1:
+            print("single variable:", os.sys.argv[1])
+            variables = os.sys.argv[1]
 
-                    filename = f"{variable}_{timestep}_{stage}.nc"
-                    print(f"  --> find {filename}")
+        # First handle all the normal outputs.
+        for variable in variables.split(","):
+            print("Processing variable:", variable.strip())
+            if variable.strip() != "Name":  # ignore the header
+                for stage in STAGES:
+                    print("  --> stage:", stage)
 
-                    filelist = subprocess.getoutput(
-                        f"find {batch_dir} -maxdepth 4 -type f -name {filename}"
-                    ).splitlines()
+                    for timestep in TIMESTEPS:
+                        print("  --> timestep:", timestep)
 
-                    if filelist:
-                        print("merge files")
-                        subprocess.run(
-                            ["ncea", "-O", "-h", "-y", "avg"]
-                            + filelist
-                            + [f"{final_dir}/{filename}"]
+                        # Determine the file name of the outputs variable
+                        # for the specific run mode and time step
+                        filename = f"{variable.strip()}_{timestep}_{stage}.nc"
+                        print("  --> find", filename)
+
+                        # List all the output files for the variable in question
+                        # in every output sub-directory
+                        # (one directory = one sub-regional run)
+                        filelist = subprocess.getoutput(
+                            f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
                         )
-                    else:
-                        print("  --> nothing to do; no files found...")
+                        # print("  --> filelist:", filelist)
 
-    for stage in res_stages:
-        filename = f"restart-{stage}.nc"
-        print(f"  --> stage: {stage}")
+                        if filelist:
+                            # Concatenate all these files together
+                            print("merge files")
 
-        filelist = subprocess.getoutput(
-            f"find {batch_dir} -maxdepth 4 -type f -name {filename}"
-        ).splitlines()
+                            # Something is messed up with my quoting, as this only
+                            # works with the filelist variable **unquoted** which
+                            # I think is bad practice.
+                            subprocess.run(
+                                ["ncea", "-O", "-h", "-y", "avg"]
+                                + filelist.split()
+                                + [f"{self.result_dir}/{filename}"]
+                            )
+                        else:
+                            print("  --> nothing to do; no files found...")
 
-        if filelist:
-            subprocess.run(
-                ["ncea", "-O", "-h", "-y", "avg"]
-                + filelist
-                + [f"{final_dir}/{filename}"]
+        # Next handle the restart files
+        for stage in RES_STAGES:
+            filename = f"restart-{stage}.nc"
+            print("  --> stage:", stage)
+
+            filelist = subprocess.getoutput(
+                f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
             )
-        else:
-            print("nothing to do - no restart files for stage {stage} found?")
+            print("THE FILE LIST IS:", filelist)
 
-    handle_special_files(batch_dir, final_dir, "run_status.nc", "max")
-    handle_special_files(batch_dir, final_dir, "fail_log.txt", "cat")
+            if filelist:
+                subprocess.run(
+                    ["ncea", "-O", "-h", "-y", "avg"]
+                    + filelist.split()
+                    + [f"{self.result_dir}/{filename}"]
+                )
+            else:
+                print(f"nothing to do - no restart files for stage {stage} found?")
 
-
-def handle_special_files(batch_dir, final_dir, filename, operation):
-    filelist = subprocess.getoutput(
-        f"find {batch_dir} -maxdepth 4 -type f -name {filename}"
-    ).splitlines()
-    print(f"THE FILE LIST IS: {filelist}")
-
-    if filelist:
-        if operation == "max":
+        # Next handle the run_status file
+        filelist = subprocess.getoutput(
+            f"find {self.batch_dir} -maxdepth 4 -type f -name 'run_status.nc'"
+        )
+        print("THE FILE LIST IS:", filelist)
+        if filelist:
+            # NOTE: for some reason the 'avg' operator does not work with this file!!
             subprocess.run(
                 ["ncea", "-O", "-h", "-y", "max"]
-                + filelist
-                + [f"{final_dir}/{filename}"]
+                + filelist.split()
+                + [f"{self.result_dir}/run_status.nc"]
             )
-        elif operation == "cat":
-            with open(f"{final_dir}/{filename}", "a") as outfile:
-                for f in filelist:
-                    with open(f) as infile:
-                        outfile.write(infile.read())
-    else:
-        print(f"nothing to do - no {filename} files found?")
+        else:
+            print("nothing to do - no run_status.nc files found?")
 
-
-def handle_batch_merge(args):
-    output_dir_prefix = "/mnt/exacloud/{}".format(os.environ["USER"])
-    output_spec_path = "/home/{}/dvm-dos-tem/config/output_spec.csv".format(
-        os.environ["USER"]
-    )
-    stages = ["eq", "sp", "tr", "sc"]
-    res_stages = ["pr", "eq", "sp", "tr", "sc"]
-    timesteps = ["daily", "monthly", "yearly"]
-    batch_dir = f"{output_dir_prefix}/output/batch-run"
-    final_dir = f"{output_dir_prefix}/all-merged"
-
-    merge_files(
-        output_dir_prefix,
-        output_spec_path,
-        stages,
-        res_stages,
-        timesteps,
-        batch_dir,
-        final_dir,
-    )
+        # Finally, handle the fail log
+        filelist = subprocess.getoutput(
+            f"find {self.batch_dir} -maxdepth 4 -type f -name 'fail_log.txt'"
+        )
+        print("THE FILE LIST IS:", filelist)
+        if filelist:
+            for f in filelist.split():
+                with open(f) as f_read:
+                    with open(f"{self.result_dir}/fail_log.txt", "a") as f_write:
+                        f_write.write(f_read.read())
+        else:
+            print("nothing to do - no fail_log.txt files found?")
