@@ -49,15 +49,14 @@ class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
         self._args = args
         self._cells_per_batch = self._args.cells_per_batch
-        self._config_file_path = f"{self.home_dir}/dvm-dos-tem/config/config.js"
 
-    # todo: we might create a progress bar for this since it takes
-    # quite some time for a bigger input datasets and we don't want
-    # to drown the terminal with the same output
     def execute(self):
         # Look in the config file to figure out where the full-domain runmask is.
-        with open(self._config_file_path) as f:
+        with open(self.config_path) as f:
             input_str = f.read()
+
+        # the config file contains comments which are not valid
+        # therefore, we are removing them before parsing
         j = json.loads(re.sub("//.*\n", "\n", input_str))
         BASE_RUNMASK = j["IO"]["runmask_file"]
         BASE_OUTDIR = j["IO"]["output_dir"]
@@ -67,18 +66,10 @@ class BatchSplitCommand(BaseCommand):
         with nc.Dataset(BASE_RUNMASK, "r") as runmask:
             TOTAL_CELLS_TO_RUN = np.count_nonzero(runmask.variables["run"])
             print(f"Total cells to run: {TOTAL_CELLS_TO_RUN}")
-            # runmasklist = runmask.variables["run"][:, :].flatten()
-            # runmaskreversed = runmasklist[::-1]
-            # last_cell_index = len(runmaskreversed) - np.argmax(runmaskreversed) - 1
-            # Padded due to the fact that this allows for discontiguous runs
-            #  while accounting for the fact that cell assignment is very
-            #  rigid in the model
-            # padded_cell_count = last_cell_index + 1
 
-        # nbatches = padded_cell_count / self._cells_per_batch
         nbatches = TOTAL_CELLS_TO_RUN / self._cells_per_batch
+
         # If there are extra cells, or fewer cells than self._cells_per_batch
-        # if (padded_cell_count % self._cells_per_batch != 0):
         if TOTAL_CELLS_TO_RUN % self._cells_per_batch != 0:
             print("Adding another batch to pick up stragglers!")
             nbatches += 1
@@ -86,25 +77,20 @@ class BatchSplitCommand(BaseCommand):
         nbatches = int(nbatches)
         print("NUMBER OF BATCHES: ", nbatches)
 
-        #
         # SETUP DIRECTORIES
-        #
         print("Removing any existing staging or batch run directories")
         if os.path.isdir(BASE_OUTDIR + "/batch-run"):
             shutil.rmtree(BASE_OUTDIR + "/batch-run")
 
         bar = Bar("Setting up the batches", max=nbatches)
         for batch_id in range(0, nbatches):
-            # print(f"Making directories for batch {batch_id}")
             mkdir_p(BASE_OUTDIR + f"/batch-run/batch-{batch_id}")
 
             work_dir = BASE_OUTDIR + "/batch-run"
 
-            # print(f"Copy run mask, config file, etc for batch {batch_id}")
             shutil.copy(BASE_RUNMASK, work_dir + f"/batch-{batch_id}/")
-            shutil.copy(self._config_file_path, work_dir + f"/batch-{batch_id}/")
+            shutil.copy(self.config_path, work_dir + f"/batch-{batch_id}/")
 
-            # print(f"Reset the run mask for batch {batch_id}")
             with nc.Dataset(
                 work_dir + f"/batch-{batch_id}/run-mask.nc", "a"
             ) as runmask:
@@ -113,9 +99,7 @@ class BatchSplitCommand(BaseCommand):
 
         bar.finish()
 
-        #
         # BUILD BATCH SPECIFIC RUN-MASKS
-        #
         with nc.Dataset(BASE_RUNMASK, "r") as runmask:
             nz_ycoords = runmask.variables["run"][:].nonzero()[0]
             nz_xcoords = runmask.variables["run"][:].nonzero()[1]
@@ -137,35 +121,27 @@ class BatchSplitCommand(BaseCommand):
             if (cells_in_sublist == self._cells_per_batch) or (
                 i == len(coord_list) - 1
             ):
-                # print(f"Group {batch} will run {cells_in_sublist} cells...")
                 batch += 1
                 cells_in_sublist = 0
                 bar.next()
 
         bar.finish()
 
-        #
         # SUMMARIZE
-        #
         number_batches = batch
-        # assert (
-        #     nbatches == number_batches
-        # ), f"PROBLEM: Something is wrong with the batch numbers: {nbatches} vs {number_batches}"
         print(f"Split cells into {number_batches} batches...")
 
-        #
         # MODIFY THE CONFIG FILE FOR EACH BATCH
-        #
         print(
-            "Modifying each batch's config file; changing path to run mask and to output directory..."
+            "Modifying each batch's config file; "
+            "changing path to run mask and to output directory..."
         )
         for batch_num in range(0, number_batches):
             with open(work_dir + f"/batch-{batch_num}/config.js") as f:
                 input_string = f.read()
 
-            j = json.loads(
-                re.sub("//.*\n", "\n", input_string)
-            )  # Strip comments from json file
+            # Strip comments from json file
+            j = json.loads(re.sub("//.*\n", "\n", input_string))
             j["IO"]["runmask_file"] = work_dir + f"/batch-{batch_num}/run-mask.nc"
             j["IO"]["output_dir"] = work_dir + f"/batch-{batch_num}/output/"
 
@@ -174,9 +150,7 @@ class BatchSplitCommand(BaseCommand):
             with open(work_dir + f"/batch-{batch_num}/config.js", "w") as f:
                 f.write(output_str)
 
-        #
         # SUBMIT SBATCH SCRIPT FOR EACH BATCH
-        #
         bar = Bar("Writing sbatch script for each batch", max=number_batches)
         for batch in range(0, number_batches):
             with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
@@ -224,6 +198,4 @@ class BatchSplitCommand(BaseCommand):
         bar.finish()
 
         print("Split operation is completed.")
-        print(
-            f"Please check /mnt/exacloud/{self.user}/output/batch-run for the results."
-        )
+        print(f"Please check {self.batch_dir} for the results.")

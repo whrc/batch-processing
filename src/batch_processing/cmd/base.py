@@ -14,6 +14,7 @@ class BaseCommand(ABC):
         self.input_dir = f"/mnt/exacloud/{self.user}/input"
         self.output_dir = f"/mnt/exacloud/{self.user}/output"
         self.slurm_log_dir = f"{self.exacloud_user_dir}/slurm-logs"
+        self.batch_dir = f"{self.output_dir}/batch-run"
 
     @abstractmethod
     def execute(self):
