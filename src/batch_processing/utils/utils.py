@@ -24,7 +24,7 @@ def mkdir_p(path: str) -> None:
             raise
 
 
-def download_directory(bucket_name: str, blob_name: str) -> None:
+def download_directory(bucket_name: str, blob_name: str, output_path: str) -> None:
     """Downloads a directory from Google Cloud Storage.
 
     Args:
@@ -47,9 +47,9 @@ def download_directory(bucket_name: str, blob_name: str) -> None:
             continue
         file_split = blob.name.split("/")
         directory = "/".join(file_split[0:-1])
-        absolute_directory = f"{os.getenv('HOME')}/{directory}"
+        absolute_directory = f"{output_path}/{directory}"
         Path(absolute_directory).mkdir(parents=True, exist_ok=True)
-        blob.download_to_filename(f"{os.getenv('HOME')}/{blob.name}")
+        blob.download_to_filename(f"{output_path}/{blob.name}")
 
 
 def download_file(bucket_name: str, blob_name: str, output_file_name: str) -> None:

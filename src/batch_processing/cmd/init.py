@@ -15,7 +15,7 @@ class InitCommand(BaseCommand):
 
         # Copy necessary files from the cloud
         print("Copying dvm-dos-tem to the home directory...")
-        download_directory("gcp-slurm", "dvm-dos-tem/")
+        download_directory("gcp-slurm", "dvm-dos-tem/", self.home_dir)
         print(f"dvm-dos-tem is copied to {self.home_dir}")
         run_command(["chmod", "+x", self.dvmdostem_bin_path])
 
@@ -49,7 +49,7 @@ class InitCommand(BaseCommand):
             data = data.replace("gs://", "").split("/")
             bucket_name = data[0]
             blob_name = data[1:]
-            download_directory(bucket_name, blob_name)
+            download_directory(bucket_name, blob_name, self.input_dir)
             print(
                 "The input data is successfully copied "
                 f"from Google Bucket to {self.input_dir}"
