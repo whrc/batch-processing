@@ -9,7 +9,9 @@ from batch_processing.cmd.base import BaseCommand
 
 class ElapsedCommand(BaseCommand):
     def __init__(self, args):
+        super().__init__()
         self._args = args
+        # move this to exacloud file system
         self._file_path = "/home/dteber_woodwellclimate_org/elapsed_time.txt"
         self._sleep_time = 10
 

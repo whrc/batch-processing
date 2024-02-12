@@ -8,6 +8,7 @@ from batch_processing.utils.utils import run_command
 
 class BatchRunCommand(BaseCommand):
     def __init__(self, args):
+        super().__init__()
         self._args = args
 
     def execute(self):

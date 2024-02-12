@@ -47,6 +47,7 @@ from batch_processing.utils.utils import mkdir_p
 
 class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
+        super().__init__()
         self._args = args
         self._cells_per_batch = self._args.cells_per_batch
 
