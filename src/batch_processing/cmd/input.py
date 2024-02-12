@@ -1,9 +1,7 @@
 import json
-import os
 import re
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.constants import CONFIG_PATH
 
 
 class InputCommand(BaseCommand):
@@ -26,12 +24,12 @@ class InputCommand(BaseCommand):
     def __init__(self, args):
         # dvmdostem cannot interpret ~ (tilde) as the home directory
         if "~" in args.input_path:
-            args.input_path = args.input_path.replace("~", os.getenv("HOME"))
+            args.input_path = args.input_path.replace("~", self.home_dir)
 
         self._args = args
 
     def execute(self):
-        with open(CONFIG_PATH) as file:
+        with open(self.config_path) as file:
             file_content = file.read()
 
         config = json.loads(re.sub("//.*\n", "\n", file_content))
@@ -44,14 +42,12 @@ class InputCommand(BaseCommand):
                 self._args.input_path += "/"
             io_json[key] = self._args.input_path + file_name
 
-        io_json["parameter_dir"] = f"{os.getenv('HOME')}/dvm-dos-tem/parameters/"
-        io_json["output_dir"] = f"/mnt/exacloud/{os.getenv('USER')}/output"
-        io_json[
-            "output_spec_file"
-        ] = f"{os.getenv('HOME')}/dvm-dos-tem/config/output_spec.csv"
+        io_json["parameter_dir"] = f"{self.home_dir}/dvm-dos-tem/parameters/"
+        io_json["output_dir"] = f"/mnt/exacloud/{self.user}/output"
+        io_json["output_spec_file"] = self.output_spec_path
 
-        with open(CONFIG_PATH, "w") as file:
+        with open(self.config_path, "w") as file:
             json.dump(config, file, indent=2)
 
         print("config.js is updated according to the provided input file.")
-        print(f"You can check the file via: cat {CONFIG_PATH}")
+        print(f"You can check the file via: cat {self.config_path}")

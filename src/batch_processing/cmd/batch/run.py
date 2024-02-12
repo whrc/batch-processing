@@ -11,8 +11,7 @@ class BatchRunCommand(BaseCommand):
         self._args = args
 
     def execute(self):
-        USER = os.getenv("USER")
-        BATCH_DIR = f"/mnt/exacloud/{USER}/output/batch-run"
+        BATCH_DIR = f"/mnt/exacloud/{self.user}/output/batch-run"
         full_paths = [os.path.join(BATCH_DIR, item) for item in os.listdir(BATCH_DIR)]
         total_batches = sum(1 for path in full_paths if os.path.isdir(path))
 

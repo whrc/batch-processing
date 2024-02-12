@@ -49,7 +49,7 @@ class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
         self._args = args
         self._cells_per_batch = self._args.cells_per_batch
-        self._config_file_path = f"{os.getenv('HOME')}/dvm-dos-tem/config/config.js"
+        self._config_file_path = f"{self.home_dir}/dvm-dos-tem/config/config.js"
 
     # todo: we might create a progress bar for this since it takes
     # quite some time for a bigger input datasets and we don't want
@@ -195,7 +195,7 @@ class BatchSplitCommand(BaseCommand):
         #SBATCH -p {self._args.slurm_partition}
 
         # Log the output
-        #SBATCH -o /mnt/exacloud/{os.getenv('USER')}/slurm-logs/batch-{batch}.out
+        #SBATCH -o /mnt/exacloud/{self.user}/slurm-logs/batch-{batch}.out
 
         # Number of MPI tasks
         #SBATCH -N 1
@@ -225,5 +225,5 @@ class BatchSplitCommand(BaseCommand):
 
         print("Split operation is completed.")
         print(
-            f"Please check /mnt/exacloud/{os.getenv('USER')}/output/batch-run for the results."
+            f"Please check /mnt/exacloud/{self.user}/output/batch-run for the results."
         )

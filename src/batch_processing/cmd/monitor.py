@@ -114,9 +114,8 @@ class MonitorCommand(BaseCommand):
             if status == TERMINATED:
                 logger.debug(f"{name} is terminated.")
                 batch_number = get_batch_number(name)
-                user = os.getenv("USER")
                 output_folder_path = (
-                    f"/mnt/exacloud/{user}/output/batch-run/batch-{batch_number}"
+                    f"/mnt/exacloud/{self.user}/output/batch-run/batch-{batch_number}"
                 )
                 delete_output_folder(output_folder_path)
                 self._instance_status_mapping[name] = ""
