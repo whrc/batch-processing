@@ -1,7 +1,10 @@
+import os
 import subprocess
+import sys
 import time
-from batch_processing.cmd.base import BaseCommand
 from datetime import datetime
+
+from batch_processing.cmd.base import BaseCommand
 
 
 class ElapsedCommand(BaseCommand):
@@ -16,6 +19,16 @@ class ElapsedCommand(BaseCommand):
             file.write(s + now + "\n")
 
     def execute(self):
+        try:
+            pid = os.fork()
+            # exit the main process
+            if pid > 0:
+                sys.exit(0)
+        except OSError as e:
+            # todo: log the error
+            sys.exit(e)
+
+        # continue the execution from the child process
         self.get_now_and_write("start datetime: ")
         print(f"Timer has started. Check {self._file_path} for the results.")
         while True:
