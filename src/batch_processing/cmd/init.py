@@ -8,8 +8,9 @@ class InitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
-        self._input_dir = f"/mnt/exacloud/{self.user}/input"
 
+    # todo: put the necessary files in a dedicated bucket
+    # and pull from there
     def execute(self):
         if self.user == "root":
             raise ValueError("Do not run as root or with sudo.")
@@ -40,27 +41,26 @@ class InitCommand(BaseCommand):
         )
         print(
             "A new directory is created for the current user, "
-            f"{self.user} in /mnt/exacloud"
+            f"{self.exacloud_user_dir}"
         )
 
         data = self._args.input_data
         if data:
-            Path(self._input_dir).mkdir(exist_ok=True)
+            Path(self.input_dir).mkdir(exist_ok=True)
             # todo: take `bucket_name` and `prefix` as arguments
             # download_directory(args.bucket_name, args.prefix)
-            run_command(["gsutil", "-m", "cp", "-r", data, self._input_dir])
+            run_command(["gsutil", "-m", "cp", "-r", data, self.input_dir])
             print(
                 "The input data is successfully copied "
-                f"from Google Bucket to {self._input_dir}"
+                f"from Google Bucket to {self.input_dir}"
             )
 
-        Path(f"/mnt/exacloud/{self.user}/slurm-logs").mkdir(exist_ok=True)
-        print(f"slurm-logs directory is created under /mnt/exacloud/{self.user}")
+        Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
+        print(f"slurm-logs directory is created under {self.exacloud_user_dir}")
 
         run_command(["lfs", "setstripe", "-S", "0.25M", self.exacloud_user_dir])
 
         print("\nThe initialization is successfully completed.")
         print(
-            f"Check /home/{self.user} and "
-            f"/mnt/exacloud/{self.user} for the changes.\n"
+            f"Check {self.home_dir} and " f"{self.exacloud_user_dir} for the changes.\n"
         )
