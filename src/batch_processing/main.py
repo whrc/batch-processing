@@ -1,7 +1,7 @@
 import argparse
 import textwrap
 
-from batch_processing.cmd.batch.merge import handle_batch_merge
+from batch_processing.cmd.batch.merge import BatchMergeCommand
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
@@ -84,7 +84,7 @@ def main():
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
     )
-    parser_batch_merge.set_defaults(func=handle_batch_merge)
+    parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
     parser_monitoring = subparsers.add_parser(
         "monitor",
