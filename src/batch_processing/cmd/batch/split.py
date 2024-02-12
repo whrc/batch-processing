@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import shutil
 import textwrap
 
@@ -9,7 +8,7 @@ import numpy as np
 from progress.bar import Bar
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import mkdir_p
+from batch_processing.utils.utils import clean_and_load_json, mkdir_p
 
 # This script is used to split a dvmdostem run into "sub domains" that can be
 # run individually (submitted to the queue manager) and then merged together
@@ -58,7 +57,7 @@ class BatchSplitCommand(BaseCommand):
 
         # the config file contains comments which are not valid
         # therefore, we are removing them before parsing
-        j = json.loads(re.sub("//.*\n", "\n", input_str))
+        j = clean_and_load_json(input_str)
         BASE_RUNMASK = j["IO"]["runmask_file"]
         BASE_OUTDIR = j["IO"]["output_dir"]
 
@@ -142,7 +141,7 @@ class BatchSplitCommand(BaseCommand):
                 input_string = f.read()
 
             # Strip comments from json file
-            j = json.loads(re.sub("//.*\n", "\n", input_string))
+            j = clean_and_load_json(input_string)
             j["IO"]["runmask_file"] = work_dir + f"/batch-{batch_num}/run-mask.nc"
             j["IO"]["output_dir"] = work_dir + f"/batch-{batch_num}/output/"
 

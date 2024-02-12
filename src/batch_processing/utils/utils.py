@@ -1,5 +1,7 @@
 import errno
+import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -69,3 +71,18 @@ def download_file(bucket_name: str, blob_name: str, output_file_name: str) -> No
     bucket = storage_client.get_bucket(bucket_name)
     blob = bucket.get_blob(blob_name)
     blob.download_to_filename(output_file_name)
+
+
+def clean_and_load_json(input: str) -> dict:
+    """
+    Cleans comments from JSON-formatted string and loads it into a Python object.
+
+    Args:
+        input (str): Input JSON-formatted string possibly containing comments.
+
+    Returns:
+        dict: Python dictionary representing the JSON data.
+    """
+    cleaned_str = re.sub("//.*\n", "\n", input)
+    json_data = json.loads(cleaned_str)
+    return json_data

@@ -1,7 +1,7 @@
 import json
-import re
 
 from batch_processing.cmd.base import BaseCommand
+from batch_processing.utils.utils import clean_and_load_json
 
 
 class InputCommand(BaseCommand):
@@ -35,7 +35,7 @@ class InputCommand(BaseCommand):
 
         # the config file contains comments which are not valid
         # therefore, we are removing them before parsing
-        config = json.loads(re.sub("//.*\n", "\n", file_content))
+        config = clean_and_load_json(file_content)
 
         io_json = config["IO"]
         for key in self.IO_FILE_KEYS:
