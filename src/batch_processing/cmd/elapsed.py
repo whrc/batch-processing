@@ -1,10 +1,10 @@
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime
 
 from batch_processing.cmd.base import BaseCommand
+from batch_processing.utils.utils import get_slurm_queue
 
 
 class ElapsedCommand(BaseCommand):
@@ -35,9 +35,7 @@ class ElapsedCommand(BaseCommand):
         self.get_now_and_write("start datetime: ")
         print(f"Timer has started. Check {self._file_path} for the results.")
         while True:
-            queue = subprocess.run(
-                ["squeue", "--me", "--noheader"], stdout=subprocess.PIPE
-            ).stdout.decode("utf-8")
+            queue = get_slurm_queue()
             if not queue:
                 self.get_now_and_write("end datetime: ")
                 break
