@@ -88,7 +88,7 @@ def clean_and_load_json(input: str) -> dict:
     return json_data
 
 
-def get_slurm_queue(params: list = None) -> str:
+def get_slurm_queue(params: list = []) -> str:
     command = ["squeue", "--me", "--noheader"]
     command.extend(params)
 
