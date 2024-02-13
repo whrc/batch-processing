@@ -1,9 +1,9 @@
 import os
+import subprocess
 
 from progress.bar import Bar
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import run_command
 
 
 class BatchRunCommand(BaseCommand):
@@ -17,11 +17,10 @@ class BatchRunCommand(BaseCommand):
         ]
         total_batches = sum(1 for path in full_paths if os.path.isdir(path))
 
-        # fix the outputting error
         bar = Bar("Submitting batches", max=total_batches)
         for index in range(0, total_batches):
             slurm_script_path = f"{self.batch_dir}/batch-{index}/slurm_runner.sh"
-            run_command(["sbatch", slurm_script_path, ">", "/dev/null"])
+            subprocess.check_output(["sbatch", slurm_script_path])
             bar.next()
 
         bar.finish()
