@@ -93,13 +93,6 @@ def main():
             "it resubmits that."
         ),
     )
-    group = parser_monitoring.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--start", action="store_true", help="Starts the monitoring process"
-    )
-    group.add_argument(
-        "--stop", action="store_true", help="Stops the monitoring process"
-    )
     parser_monitoring.add_argument(
         "-c",
         "--instance-count",

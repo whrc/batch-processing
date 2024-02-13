@@ -86,3 +86,10 @@ def clean_and_load_json(input: str) -> dict:
     cleaned_str = re.sub("//.*\n", "\n", input)
     json_data = json.loads(cleaned_str)
     return json_data
+
+
+def get_slurm_queue(params: list = None) -> str:
+    command = ["squeue", "--me", "--noheader"]
+    command.extend(params)
+
+    return subprocess.check_output(command).decode("utf-8")
