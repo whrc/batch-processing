@@ -47,7 +47,11 @@ def main():
     )
 
     parser_batch_split = batch_subparsers.add_parser(
-        "split", help="Split the input data into different batches"
+        "split",
+        help=(
+            "Split the input data into different batches."
+            "Note that this command removes the existing batches."
+        ),
     )
     parser_batch_split.add_argument(
         "-c", "--cells-per-batch", type=int, help="The number of cells per batch"
