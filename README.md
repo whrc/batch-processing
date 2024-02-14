@@ -5,7 +5,7 @@ The cluster can be found on [this repository](https://github.com/whrc/GCP-Slurm-
 
 In this document, it is assumed that the HPC cluster is already up and running and you have logged in to the Slurm's login node.
 
-## How to Install
+## How to Install
 
 It already comes pre-installed to the Slurm login node.
 However, if you want to customize it, first delete the existing program and follow the below steps:
@@ -16,7 +16,7 @@ cd batch-processing/
 pip install .
 ```
 
-## How to Use
+## How to Use
 
 ```
 usage: bp [-h]  ...
@@ -67,7 +67,7 @@ You can learn the details via `bp batch split --help`
 6) (**Optional**) Measure the elapsed time to run the simulation: `bp elapsed`
 
 
-## Contributing
+## Contributing
 
 It is pretty easy to start working on the project:
 
