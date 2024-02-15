@@ -33,7 +33,7 @@ class MonitorCommand(BaseCommand):
             filename=self._log_file_path,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
 
     def execute(self):
         try:
@@ -50,17 +50,19 @@ class MonitorCommand(BaseCommand):
         self._start_monitoring()
 
     def _start_monitoring(self):
-        logger.info(
+        print(
             "Monitoring has started. "
             f"You can check {self._log_file_path} for the logs"
         )
         while True:
-            logger.debug("Checking the instances...")
-            self._check_instances()
-
+            logger.debug("Checking the queue...")
             queue = get_slurm_queue()
             if not queue:
+                logger.debug("The queue is empty. Monitoring is finished.")
                 break
+
+            logger.debug("Checking the instances...")
+            self._check_instances()
 
             time.sleep(self._sleep_time)
 
@@ -70,6 +72,7 @@ class MonitorCommand(BaseCommand):
             if status == "TERMINATED":
                 logger.debug(f"{name} is terminated.")
                 batch_number = self._get_batch_number(name)
+                logger.debug(f"The batch number of the executed job is {batch_number}")
                 # this line is broken into two lines due to it's being
                 # too long but it is actually a one full line.
                 output_folder_path = (
@@ -81,6 +84,7 @@ class MonitorCommand(BaseCommand):
                     # remove the output folder for this batch because the machine
                     # that is running this batch is pre-maturely terminated
                     shutil.rmtree(output_folder_path)
+
                 # the file is already deleted, so we can continue
                 # we can hit this line if we check the instances too often
                 except FileNotFoundError:
