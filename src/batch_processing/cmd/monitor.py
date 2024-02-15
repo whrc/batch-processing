@@ -91,7 +91,7 @@ class MonitorCommand(BaseCommand):
                     pass
 
                 self._instance_status_mapping[name] = ""
-                logger.debug(f"{name}'s output folder is deleted.")
+                logger.debug(f"batch-{batch_number}'s output folder is deleted.")
                 logger.debug("_instance_status_mapping looks like this\n")
                 logger.debug(self._instance_status_mapping)
 
