@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 from batch_processing.cmd.base import BaseCommand
@@ -15,9 +16,25 @@ class InitCommand(BaseCommand):
 
         # Copy necessary files from the cloud
         print("Copying dvm-dos-tem to the home directory...")
-        download_directory("gcp-slurm", "dvm-dos-tem/", self.home_dir)
+        # download_directory("gcp-slurm", "dvm-dos-tem/", self.home_dir)
+        subprocess.run(
+            "git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git",
+            shell=True,
+            check=True,
+            executable="/bin/bash",
+        )
+
+        command = """
+        cd dvm-dos-tem && \
+        export DOWNLOADPATH=/dependencies && \
+        . $DOWNLOADPATH/setup-env.sh && \
+        module load openmpi && \
+        make USEMPI=true
+        """
+
+        subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         print(f"dvm-dos-tem is copied to {self.home_dir}")
-        run_command(["chmod", "+x", self.dvmdostem_bin_path])
+        # run_command(["chmod", "+x", self.dvmdostem_bin_path])
 
         download_file(
             "gcp-slurm",
