@@ -23,7 +23,9 @@ class InitCommand(BaseCommand):
             check=True,
             executable="/bin/bash",
         )
+        print(f"dvm-dos-tem is copied to {self.home_dir}")
 
+        print("Compile dvmdostem binary...")
         command = """
         cd dvm-dos-tem && \
         export DOWNLOADPATH=/dependencies && \
@@ -33,8 +35,8 @@ class InitCommand(BaseCommand):
         """
 
         subprocess.run(command, shell=True, check=True, executable="/bin/bash")
-        print(f"dvm-dos-tem is copied to {self.home_dir}")
         # run_command(["chmod", "+x", self.dvmdostem_bin_path])
+        print("dvmdostem binary is successfully compiled.")
 
         download_file(
             "gcp-slurm",
