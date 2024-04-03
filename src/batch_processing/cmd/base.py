@@ -23,7 +23,6 @@ class BaseCommand(ABC):
         self.input_dir = f"{self.exacloud_user_dir}/input"
         self.output_dir = f"{self.exacloud_user_dir}/output"
         self.slurm_log_dir = f"{self.exacloud_user_dir}/slurm-logs"
-        self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
         self.batch_dir = f"{self.output_dir}/batch-run"
 

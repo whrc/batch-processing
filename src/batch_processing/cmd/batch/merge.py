@@ -8,6 +8,7 @@ class BatchMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
+        self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
     def execute(self):
         STAGES = ["eq", "sp", "tr", "sc"]
@@ -16,7 +17,13 @@ class BatchMergeCommand(BaseCommand):
 
         os.makedirs(self.result_dir, exist_ok=True)
 
-        variables = open(self.output_spec_path).readlines()[0].split(",")[0]
+        with open(self.output_spec_path) as file:
+            content = file.readlines()
+
+        variables = []
+        for line in content:
+            variable = line.split(",")[0]
+            variables.append(variable)
 
         # If merging files for a single variable
         if len(os.sys.argv) != 1:
