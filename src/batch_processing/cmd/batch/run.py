@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 from progress.bar import Bar
 
@@ -7,6 +8,9 @@ from batch_processing.cmd.base import BaseCommand
 
 
 class BatchRunCommand(BaseCommand):
+    BATCH_INTERVAL = 20
+    SLEEP_TIME = 5
+
     def __init__(self, args):
         super().__init__()
         self._args = args
@@ -22,5 +26,8 @@ class BatchRunCommand(BaseCommand):
             slurm_script_path = f"{self.batch_dir}/batch-{index}/slurm_runner.sh"
             subprocess.check_output(["sbatch", slurm_script_path])
             bar.next()
+
+            if (index + 1) % self.BATCH_INTERVAL == 0:
+                time.sleep(self.SLEEP_TIME)
 
         bar.finish()
