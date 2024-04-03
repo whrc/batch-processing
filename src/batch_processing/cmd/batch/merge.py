@@ -25,48 +25,44 @@ class BatchMergeCommand(BaseCommand):
             variable = line.split(",")[0]
             variables.append(variable)
 
-        # If merging files for a single variable
-        if len(os.sys.argv) != 1:
-            print("single variable:", os.sys.argv[1])
-            variables = os.sys.argv[1]
+        # Name isn't a variable. It's a name. So, we skip that.
+        variables.remove("Name")
 
         # First handle all the normal outputs.
-        for variable in variables.split(","):
+        for variable in variables:
             print("Processing variable:", variable.strip())
-            if variable.strip() != "Name":  # ignore the header
-                for stage in STAGES:
-                    print("  --> stage:", stage)
+            for stage in STAGES:
+                print("  --> stage:", stage)
 
-                    for timestep in TIMESTEPS:
-                        print("  --> timestep:", timestep)
+                for timestep in TIMESTEPS:
+                    print("  --> timestep:", timestep)
 
-                        # Determine the file name of the outputs variable
-                        # for the specific run mode and time step
-                        filename = f"{variable.strip()}_{timestep}_{stage}.nc"
-                        print("  --> find", filename)
+                    # Determine the file name of the outputs variable
+                    # for the specific run mode and time step
+                    filename = f"{variable.strip()}_{timestep}_{stage}.nc"
+                    print("  --> find", filename)
 
-                        # List all the output files for the variable in question
-                        # in every output sub-directory
-                        # (one directory = one sub-regional run)
-                        filelist = subprocess.getoutput(
-                            f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
+                    # List all the output files for the variable in question
+                    # in every output sub-directory
+                    # (one directory = one sub-regional run)
+                    filelist = subprocess.getoutput(
+                        f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
+                    )
+
+                    if filelist:
+                        # Concatenate all these files together
+                        print("merge files")
+
+                        # Something is messed up with my quoting, as this only
+                        # works with the filelist variable **unquoted** which
+                        # I think is bad practice.
+                        subprocess.run(
+                            ["ncea", "-O", "-h", "-y", "avg"]
+                            + filelist.split()
+                            + [f"{self.result_dir}/{filename}"]
                         )
-                        # print("  --> filelist:", filelist)
-
-                        if filelist:
-                            # Concatenate all these files together
-                            print("merge files")
-
-                            # Something is messed up with my quoting, as this only
-                            # works with the filelist variable **unquoted** which
-                            # I think is bad practice.
-                            subprocess.run(
-                                ["ncea", "-O", "-h", "-y", "avg"]
-                                + filelist.split()
-                                + [f"{self.result_dir}/{filename}"]
-                            )
-                        else:
-                            print("  --> nothing to do; no files found...")
+                    else:
+                        print("  --> nothing to do; no files found...")
 
         # Next handle the restart files
         for stage in RES_STAGES:
