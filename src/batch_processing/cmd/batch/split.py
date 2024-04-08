@@ -211,8 +211,8 @@ class BatchSplitCommand(BaseCommand):
                 )
 
         print(
-            "[green]Deletion of files under {self.slurm_log_dir} is completed.[/green]"
+            f"[bold green]Deletion of files under {self.slurm_log_dir} is completed.[/bold green]"
         )
 
-        print("[green]Split operation is completed.[/green]")
-        print(f"[green]Please check {self.batch_dir} for the results.[/green]")
+        print("[bold green]Split operation is completed.[/bold green]")
+        print(f"[bold blue]Please check {self.batch_dir} for the results.[/bold blue]")
