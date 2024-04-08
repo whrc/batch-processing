@@ -55,6 +55,6 @@ class InputCommand(BaseCommand):
             json.dump(config, file, indent=2)
 
         print(
-            "[green]config.js is updated according to the provided input file.[/green]"
+            "[bold green]config.js is updated according to the provided input file.[/bold green]"
         )
-        print(f"[blue]You can check the file via: cat {self.config_path}[/blue]")
+        print(f"[bold blue]You can check the file via: cat {self.config_path}[/bold blue]")
