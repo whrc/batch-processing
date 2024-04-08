@@ -197,5 +197,21 @@ class BatchSplitCommand(BaseCommand):
 
         bar.finish()
 
+        log_files = os.listdir(self.slurm_log_dir)
+        bar = Bar(f"Deleting files under {self.slurm_log_dir}", max=len(log_files))
+        for file_name in log_files:
+            file_path = os.path.join(self.slurm_log_dir, file_name)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                    bar.next()
+            except Exception as e:
+                print(
+                    f"Encountered an error while deleting the log file {file_path}: {e}"
+                )
+
+        bar.finish()
+        print(f"Deletion of files under {self.slurm_log_dir} is completed.")
+
         print("Split operation is completed.")
         print(f"Please check {self.batch_dir} for the results.")
