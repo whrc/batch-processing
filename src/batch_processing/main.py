@@ -115,16 +115,6 @@ def main():
     parser_init = subparsers.add_parser(
         "init", help="Initialize the environment for running the simulation"
     )
-    parser_init.add_argument(
-        "-d",
-        "--input-data",
-        help=(
-            "An absolute path of the data folder in the Google Bucket."
-            "Valid examples are:"
-            "gs://bucket-name/some-folder/another-folder"
-            "bucket-name/some-folder/another-folder/"
-        ),
-    )
     parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
 
     parser_input = subparsers.add_parser(

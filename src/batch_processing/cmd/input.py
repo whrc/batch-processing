@@ -1,5 +1,7 @@
 import json
 
+from rich import print
+
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import clean_and_load_json
 
@@ -52,5 +54,7 @@ class InputCommand(BaseCommand):
         with open(self.config_path, "w") as file:
             json.dump(config, file, indent=2)
 
-        print("config.js is updated according to the provided input file.")
-        print(f"You can check the file via: cat {self.config_path}")
+        print(
+            "[green]config.js is updated according to the provided input file.[/green]"
+        )
+        print(f"[blue]You can check the file via: cat {self.config_path}[/blue]")
