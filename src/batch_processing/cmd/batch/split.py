@@ -124,6 +124,7 @@ class BatchSplitCommand(BaseCommand):
                 i == len(coord_list) - 1
             ):
                 batch += 1
+                cells_in_sublist = 0 
 
         # SUMMARIZE
         number_batches = batch
