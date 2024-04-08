@@ -18,7 +18,7 @@ class InitCommand(BaseCommand):
         print("Copying dvm-dos-tem to the home directory...")
         # download_directory("gcp-slurm", "dvm-dos-tem/", self.home_dir)
         subprocess.run(
-            "git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git",
+            f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git {self.home_dir}/dvm-dos-tem",
             shell=True,
             check=True,
             executable="/bin/bash",
