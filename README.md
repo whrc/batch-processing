@@ -52,12 +52,21 @@ A typical workflow would look like this:
 
 1) Initialize the environment: `bp init`.
 
-Optionally, you can provide an additional argument `-d` which is the location of the input data you want to copy into the cluster.
-
 2) Configure the dvmdostem: `bp input -i <path-to-input-data>`
+
+All input data is pre-loaded and resides in `/mnt/exacloud` with the name `dvmdostem-inputs`.
+You have to provide a full path to the input data while running this command.
+
+Example usage:
+
+`bp input -i /mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_mri-cgcm3_Toolik_50x50`
 
 3) Split the input data into separate batches: `bp batch split -c <cells-per-batch> -p <pre-run-years> -e <equilibrium-years> -s <spin-up-years> -t <transient-years> -n <scenario-years>`
 You can learn the details via `bp batch split --help`
+
+Example usage:
+
+`bp batch split -c 10 -p 100 -e 2000 -s 50 -t 20 -n 100`
 
 4) Submit the batches to Slurm: `bp batch run`
 
