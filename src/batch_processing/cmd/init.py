@@ -46,7 +46,7 @@ class InitCommand(BaseCommand):
             self.output_spec_path,
         )
         print(
-            f"[bold green]output_spec.csv is copied to {self.output_spec_path}[/bold green]"
+            f"[bold blue]output_spec.csv is copied to {self.output_spec_path}[/bold blue]"
         )
 
         run_command(["sudo", "-H", "mkdir", "-p", self.exacloud_user_dir])
@@ -67,12 +67,12 @@ class InitCommand(BaseCommand):
 
         Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
         print(
-            f"[bold green]slurm-logs directory is created under {self.exacloud_user_dir}[/bold green]"
+            f"[bold blue]slurm-logs directory is created under {self.exacloud_user_dir}[/bold blue]"
         )
 
         run_command(["lfs", "setstripe", "-S", "0.25M", self.exacloud_user_dir])
 
-        print("\n[bold blue]The initialization is successfully completed.[/bold blue]")
+        print("\n[bold green]The initialization is successfully completed.[/bold green]")
         print(
-            f"[bold blue]Check {self.home_dir} and {self.exacloud_user_dir} for the changes.[/bold blue]\n"
+            f"[bold green]Check {self.home_dir} and {self.exacloud_user_dir} for the changes.[/bold green]\n"
         )
