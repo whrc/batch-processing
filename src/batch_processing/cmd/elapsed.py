@@ -3,6 +3,8 @@ import sys
 import time
 from datetime import datetime
 
+from rich import print
+
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import get_slurm_queue
 
@@ -27,13 +29,15 @@ class ElapsedCommand(BaseCommand):
                 sys.exit(0)
         except OSError as e:
             print(
-                f"The fork operation is failed. Couldn't created the child process: {e}"
+                f"[red bold]The fork operation is failed. Couldn't created the child process: {e}[/red bold]"
             )
             sys.exit(e)
 
         # continue the execution from the child process
         self.get_now_and_write("start datetime: ")
-        print(f"Timer has started. Check {self._file_path} for the results.")
+        print(
+            f"[blue bold]Timer has started. Check {self._file_path} for the results.[/blue bold]"
+        )
         while True:
             queue = get_slurm_queue()
             if not queue:
@@ -42,4 +46,6 @@ class ElapsedCommand(BaseCommand):
 
             time.sleep(self._sleep_time)
 
-        print(f"The timer has stopped. Check {self._file_path} for the results.")
+        print(
+            f"[green bold]The timer has stopped. Check {self._file_path} for the results.[/green bold]"
+        )

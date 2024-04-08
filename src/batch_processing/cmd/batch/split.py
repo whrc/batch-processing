@@ -5,7 +5,8 @@ import textwrap
 
 import netCDF4 as nc
 import numpy as np
-from progress.bar import Bar
+from rich import print
+from rich.progress import track
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import clean_and_load_json, mkdir_p
@@ -71,19 +72,20 @@ class BatchSplitCommand(BaseCommand):
 
         # If there are extra cells, or fewer cells than self._cells_per_batch
         if TOTAL_CELLS_TO_RUN % self._cells_per_batch != 0:
-            print("Adding another batch to pick up stragglers!")
+            print("[blue]Adding another batch to pick up stragglers![/blue]")
             nbatches += 1
 
         nbatches = int(nbatches)
-        print("NUMBER OF BATCHES: ", nbatches)
+        print("[blue]NUMBER OF BATCHES: [/blue]", nbatches)
 
         # SETUP DIRECTORIES
-        print("Removing any existing staging or batch run directories")
+        print("[blue]Removing any existing staging or batch run directories[/blue]")
         if os.path.isdir(BASE_OUTDIR + "/batch-run"):
             shutil.rmtree(BASE_OUTDIR + "/batch-run")
 
-        bar = Bar("Setting up the batches", max=nbatches)
-        for batch_id in range(0, nbatches):
+        for batch_id in track(
+            range(0, nbatches), description="[blue]Setting up the batches[/blue]"
+        ):
             mkdir_p(BASE_OUTDIR + f"/batch-run/batch-{batch_id}")
 
             work_dir = BASE_OUTDIR + "/batch-run"
@@ -95,9 +97,6 @@ class BatchSplitCommand(BaseCommand):
                 work_dir + f"/batch-{batch_id}/run-mask.nc", "a"
             ) as runmask:
                 runmask.variables["run"][:] = np.zeros(runmask.variables["run"].shape)
-            bar.next()
-
-        bar.finish()
 
         # BUILD BATCH SPECIFIC RUN-MASKS
         with nc.Dataset(BASE_RUNMASK, "r") as runmask:
@@ -110,8 +109,11 @@ class BatchSplitCommand(BaseCommand):
         batch = 0
         cells_in_sublist = 0
         coord_list = list(zip(nz_ycoords, nz_xcoords))
-        bar = Bar("Turning on pixels in each batch's run mask", max=nbatches)
-        for i, cell in enumerate(coord_list):
+        for i, cell in track(
+            enumerate(coord_list),
+            description="[blue]Turning on pixels in each batch's run mask[/blue]",
+            total=nbatches,
+        ):
             with nc.Dataset(
                 work_dir + f"/batch-{batch}/run-mask.nc", "a"
             ) as grp_runmask:
@@ -122,21 +124,17 @@ class BatchSplitCommand(BaseCommand):
                 i == len(coord_list) - 1
             ):
                 batch += 1
-                cells_in_sublist = 0
-                bar.next()
-
-        bar.finish()
 
         # SUMMARIZE
         number_batches = batch
-        print(f"Split cells into {number_batches} batches...")
+        print(f"[green]Split cells into {number_batches} batches...[/green]")
 
         # MODIFY THE CONFIG FILE FOR EACH BATCH
         print(
-            "Modifying each batch's config file; "
-            "changing path to run mask and to output directory..."
+            "[blue]Modifying each batch's config file; "
+            "changing path to run mask and to output directory...[/blue]"
         )
-        for batch_num in range(0, number_batches):
+        for batch_num in track(range(0, number_batches)):
             with open(work_dir + f"/batch-{batch_num}/config.js") as f:
                 input_string = f.read()
 
@@ -151,12 +149,17 @@ class BatchSplitCommand(BaseCommand):
                 f.write(output_str)
 
         # SUBMIT SBATCH SCRIPT FOR EACH BATCH
-        bar = Bar("Writing sbatch script for each batch", max=number_batches)
-        for batch in range(0, number_batches):
+        for batch in track(
+            range(0, number_batches),
+            description="[blue]Writing sbatch script for each batch[/blue]",
+            total=number_batches,
+        ):
             with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
                 cells_in_batch = np.count_nonzero(runmask.variables["run"])
 
-            assert cells_in_batch > 0, "PROBLEM! Groups with no cells activated to run!"
+            assert (
+                cells_in_batch > 0
+            ), "[red]PROBLEM! Groups with no cells activated to run![/red]"
 
             slurm_runner_scriptlet = textwrap.dedent(
                 f"""\
@@ -189,29 +192,27 @@ class BatchSplitCommand(BaseCommand):
         mpirun -np {self._args.nproc} ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l disabled --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
         """.format(batch, cells_in_batch, work_dir)
             )
-            # print(f"Writing sbatch script for batch {batch}")
             with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
                 f.write(slurm_runner_scriptlet)
 
-            bar.next()
-
-        bar.finish()
-
         log_files = os.listdir(self.slurm_log_dir)
-        bar = Bar(f"Deleting files under {self.slurm_log_dir}", max=len(log_files))
-        for file_name in log_files:
+        for file_name in track(
+            log_files,
+            description=f"[blue]Deleting files under {self.slurm_log_dir}[/blue]",
+            total=len(log_files),
+        ):
             file_path = os.path.join(self.slurm_log_dir, file_name)
             try:
                 if os.path.isfile(file_path):
                     os.remove(file_path)
-                    bar.next()
             except Exception as e:
                 print(
-                    f"Encountered an error while deleting the log file {file_path}: {e}"
+                    f"[red]Encountered an error while deleting the log file {file_path}: {e}[/red]"
                 )
 
-        bar.finish()
-        print(f"Deletion of files under {self.slurm_log_dir} is completed.")
+        print(
+            "[green]Deletion of files under {self.slurm_log_dir} is completed.[/green]"
+        )
 
-        print("Split operation is completed.")
-        print(f"Please check {self.batch_dir} for the results.")
+        print("[green]Split operation is completed.[/green]")
+        print(f"[green]Please check {self.batch_dir} for the results.[/green]")
