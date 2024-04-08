@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import download_directory, download_file, run_command
+from batch_processing.utils.utils import download_file, run_command
 
 
 class InitCommand(BaseCommand):
@@ -60,19 +60,6 @@ class InitCommand(BaseCommand):
             "A new directory is created for the current user, "
             f"{self.exacloud_user_dir}"
         )
-
-        data = self._args.input_data
-        if data:
-            Path(self.input_dir).mkdir(exist_ok=True)
-
-            data = data.replace("gs://", "").split("/")
-            bucket_name = data[0]
-            blob_name = data[1:]
-            download_directory(bucket_name, blob_name, self.input_dir)
-            print(
-                "The input data is successfully copied "
-                f"from Google Bucket to {self.input_dir}"
-            )
 
         Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
         print(f"slurm-logs directory is created under {self.exacloud_user_dir}")
