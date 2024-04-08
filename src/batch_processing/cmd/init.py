@@ -28,8 +28,8 @@ class InitCommand(BaseCommand):
         print(f"[bold green]dvm-dos-tem is copied to {self.home_dir}[/bold green]")
 
         print("[bold blue]Compile dvmdostem binary...[/bold blue]")
-        command = """
-        cd dvm-dos-tem && \
+        command = f"""
+        cd {self.home_dir}/dvm-dos-tem && \
         export DOWNLOADPATH=/dependencies && \
         . $DOWNLOADPATH/setup-env.sh && \
         module load openmpi && \
