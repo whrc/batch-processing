@@ -8,7 +8,6 @@ class BatchMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
-        self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
     def execute(self):
         STAGES = ["eq", "sp", "tr", "sc"]

@@ -25,6 +25,7 @@ class BaseCommand(ABC):
         self.slurm_log_dir = f"{self.exacloud_user_dir}/slurm-logs"
 
         self.batch_dir = f"{self.output_dir}/batch-run"
+        self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
     @abstractmethod
     def execute(self):

@@ -2,6 +2,7 @@ import argparse
 import textwrap
 
 from batch_processing.cmd.batch.merge import BatchMergeCommand
+from batch_processing.cmd.batch.postprocess import BatchPostprocessCommand
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
@@ -44,6 +45,25 @@ def main():
     )
     batch_subparsers = parser_batch.add_subparsers(
         title="Available subcommands", metavar=""
+    )
+
+    parser_batch_postprocess = batch_subparsers.add_parser(
+        "postprocess",
+        help=("Post-processes the merged files and creates pre-define graphs",),
+    )
+
+    batch_postprocess_group = parser_batch_postprocess.add_mutually_exclusive_group(
+        required=True
+    )
+    batch_postprocess_group.add_argument(
+        "--light", action="store_true", help="Perform light post-processing"
+    )
+    batch_postprocess_group.add_argument(
+        "--heavy", action="store_true", help="Perform heavy post-processing"
+    )
+
+    parser_batch_postprocess.set_defaults(
+        func=lambda args: BatchPostprocessCommand(args).execute()
     )
 
     parser_batch_split = batch_subparsers.add_parser(
