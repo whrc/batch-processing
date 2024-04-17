@@ -57,4 +57,6 @@ class InputCommand(BaseCommand):
         print(
             "[bold green]config.js is updated according to the provided input file.[/bold green]"
         )
-        print(f"[bold blue]You can check the file via: cat {self.config_path}[/bold blue]")
+        print(
+            f"[bold blue]You can check the file via: cat {self.config_path}[/bold blue]"
+        )
