@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
+from typing import Union
 
 import cftime
 import matplotlib.pyplot as plt
@@ -28,7 +29,7 @@ def mkdir_p(path: str) -> None:
             raise
 
 
-def remove_file(file: str | list):
+def remove_file(file: Union[str, list]):
     """Remove the specified file or list of files.
 
     Parameters:
