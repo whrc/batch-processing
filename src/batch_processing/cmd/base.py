@@ -20,7 +20,6 @@ class BaseCommand(ABC):
         self.output_spec_path = f"{self.dvmdostem_path}/config/output_spec.csv"
 
         self.exacloud_user_dir = f"/mnt/exacloud/{self.user}"
-        self.input_dir = f"{self.exacloud_user_dir}/input"
         self.output_dir = f"{self.exacloud_user_dir}/output"
         self.slurm_log_dir = f"{self.exacloud_user_dir}/slurm-logs"
 

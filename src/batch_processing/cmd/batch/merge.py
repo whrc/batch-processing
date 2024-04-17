@@ -1,5 +1,8 @@
 import os
+import shutil
 import subprocess
+
+from rich import print
 
 from batch_processing.cmd.base import BaseCommand
 
@@ -8,6 +11,7 @@ class BatchMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
+        self.merged_config = os.path.join(self.result_dir, "config")
 
     def execute(self):
         STAGES = ["eq", "sp", "tr", "sc"]
@@ -109,3 +113,49 @@ class BatchMergeCommand(BaseCommand):
                         f_write.write(f_read.read())
         else:
             print("nothing to do - no fail_log.txt files found?")
+
+        self.copy_config_files()
+
+    def copy_config_files(self):
+        """Copies `config.js` and `slurm_runner.sh` to `all-merged/config`.
+
+        `slurm_runner.sh` is the first batch's runner script. Since the others
+        are almost the same, except the batch number, the first one is taken
+        as an example.
+
+        The reason why we are copying these files is that we may need to investigate
+        them later when a run is completed with or without an error.
+        """
+        os.makedirs(os.path.join(self.merged_config), exist_ok=True)
+
+        config_dest = os.path.join(self.merged_config, "config.js")
+        shutil.copyfile(self.config_path, config_dest)
+
+        batch_directories = os.listdir(self.batch_dir)
+
+        if not batch_directories:
+            return
+
+        # Find the first directory in the batch directory
+        first_batch_dir = next(
+            (
+                d
+                for d in batch_directories
+                if os.path.isdir(os.path.join(self.batch_dir, d))
+            ),
+            None,
+        )
+
+        if not first_batch_dir:
+            return
+
+        batch_runner_src = os.path.join(
+            self.batch_dir, first_batch_dir, "slurm_runner.sh"
+        )
+        batch_runner_dest = os.path.join(self.merged_config, "slurm_runner.sh")
+        shutil.copyfile(batch_runner_src, batch_runner_dest)
+
+        print(
+            f"[green bold]A new directory, {self.merged_config}, is created with "
+            "config.js and slurm_runner.sh for a further reference. [/green bold]"
+        )
