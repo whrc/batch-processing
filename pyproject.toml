@@ -8,14 +8,14 @@ version = "1.0.0"
 authors = [{ name = "Doğukan Teber", email = "dteber@woodwellclimate.org" }]
 description = "An internal tool that automates almost everything in the GCP Cluster"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: Unix/macOS",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.10",
 ]
 dynamic = ["dependencies"]
 
