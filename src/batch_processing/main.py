@@ -9,6 +9,7 @@ from batch_processing.cmd.elapsed import ElapsedCommand
 from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
+from batch_processing.cmd.run_check import RunCheckCommand
 
 
 def main():
@@ -112,6 +113,15 @@ def main():
         "merge", help="Merge the completed batches"
     )
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
+
+    parser_run_check = subparsers.add_parser(
+        "run_check",
+        help=(
+            "Spawns a background job to track failed jobs and re-submits them to Slurm."
+        ),
+    )
+
+    parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
 
     parser_monitoring = subparsers.add_parser(
         "monitor",
