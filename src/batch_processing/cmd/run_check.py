@@ -7,7 +7,7 @@ import time
 
 from rich.logging import RichHandler
 
-from src.batch_processing.cmd.base import BaseCommand
+from .base import BaseCommand
 
 logger = logging.getLogger(__name__)
 
