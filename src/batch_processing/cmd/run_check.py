@@ -18,12 +18,16 @@ handler = RichHandler()
 handler.setFormatter(handler_formatter)
 
 logger.addHandler(handler)
-logger.setLevel(logging.NOTSET)
 
 
 class RunCheckCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
+        logging.basicConfig(
+            level=logging.NOTSET,
+            filename=f"{os.path.join(self.exacloud_user_dir, "run_check.py")}",
+        )
+
         self._args = args
         self.keywords = ["error", "non-exit", "aborted"]
 
