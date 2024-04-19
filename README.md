@@ -13,7 +13,7 @@ However, if you want to customize it, first delete the existing program and foll
 ```bash
 git clone https://github.com/whrc/batch-processing.git
 cd batch-processing/
-pip install .
+python3.9 -m pip install .
 ```
 
 ## How to Use
