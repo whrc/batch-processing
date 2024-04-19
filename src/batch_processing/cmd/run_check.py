@@ -23,20 +23,23 @@ logger.addHandler(handler)
 class RunCheckCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
+        self.log_file_path = os.path.join(self.exacloud_user_dir, "run_check.out")
         logging.basicConfig(
             level=logging.NOTSET,
-            filename=f"{os.path.join(self.exacloud_user_dir, "run_check.out")}",
+            filename=f"{self.log_file_path}",
         )
 
         self._args = args
         self.keywords = ["error", "non-exit", "aborted"]
 
         self.resubmission_map = {}
-        files = os.listdir(self.slurm_log_dir)
-        log_files = [file for file in files if file.endswith(".out")]
-        for log_file in log_files:
+        for log_file in self.get_log_files():
             batch_name, _ = os.path.splitext(log_file)
             self.resubmission_map[batch_name] = 3
+
+    def get_log_files(self):
+        files = os.listdir(self.slurm_log_dir)
+        return [file for file in files if file.endswith(".out")]
 
     def contains_error(self, path_to_log_file):
         with open(path_to_log_file) as file:
@@ -74,9 +77,7 @@ class RunCheckCommand(BaseCommand):
         )
 
     def check(self):
-        files = os.listdir(self.slurm_log_dir)
-        log_files = [file for file in files if file.endswith(".out")]
-        for log_file in log_files:
+        for log_file in self.get_log_files():
             file_path = os.path.join(self.slurm_log_dir, log_file)
             if not self.contains_error(file_path):
                 continue
@@ -98,6 +99,10 @@ class RunCheckCommand(BaseCommand):
             )
             sys.exit(e)
 
+        print(
+            "[blue]The background job is started. Check[/blue] "
+            f"[blue bold]{self.log_file_path}[/blue] [blue]for the logs.[/blue]"
+        )
         logger.info("run_check.py is initiated.")
         while True:
             self.check()
