@@ -25,7 +25,7 @@ class RunCheckCommand(BaseCommand):
         super().__init__()
         logging.basicConfig(
             level=logging.NOTSET,
-            filename=f"{os.path.join(self.exacloud_user_dir, "run_check.py")}",
+            filename=f"{os.path.join(self.exacloud_user_dir, "run_check.out")}",
         )
 
         self._args = args
