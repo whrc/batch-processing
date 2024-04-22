@@ -10,6 +10,7 @@ from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
 from batch_processing.cmd.run_check import RunCheckCommand
+from batch_processing.cmd.run_status_check import RunStatusCheck
 
 
 def main():
@@ -113,6 +114,12 @@ def main():
         "merge", help="Merge the completed batches"
     )
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
+
+    parser_run_status_check = subparsers.add_parser("run_status", help="todo")
+
+    parser_run_status_check.set_defaults(
+        func=lambda args: RunStatusCheck(args).execute()
+    )
 
     parser_run_check = subparsers.add_parser(
         "run_check",
