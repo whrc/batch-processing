@@ -26,6 +26,8 @@ class BaseCommand(ABC):
         self.batch_dir = f"{self.output_dir}/batch-run"
         self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
+        self.run_status_path = f"{self.batch_dir}/{{}}/output/run_status.nc"
+
     @abstractmethod
     def execute(self):
         pass
