@@ -6,7 +6,7 @@ import netCDF4 as nc
 from rich import print
 
 from batch_processing.cmd.base import BaseCommand
-from src.batch_processing.utils.utils import get_progress_bar
+from batch_processing.utils.utils import get_progress_bar
 
 
 class BatchMergeCommand(BaseCommand):
