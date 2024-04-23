@@ -51,8 +51,9 @@ class BatchMergeCommand(BaseCommand):
         variables.remove("Name")
 
         with get_progress_bar() as progress_bar:
+            print("[cyan]Merging variable files...[/cyan]")
             task = progress_bar.add_task(
-                "[cyan]Merging variable files...",
+                "Merging variable files",
                 total=len(variables) * len(STAGES) * len(TIMESTEPS),
             )
             # First handle all the normal outputs.
@@ -257,9 +258,10 @@ class BatchMergeCommand(BaseCommand):
             if os.path.isdir(os.path.join(self.batch_dir, folder))
         ]
 
-        progress_bar = get_progress_bar()
-        with progress_bar as bar:
-            for batch_folder in bar.track(batch_folders):
+        print("[cyan]Checking each cell...[/cyan]")
+        with get_progress_bar() as progress_bar:
+            task = progress_bar.add_task("Check each cell", total=len(batch_folders))
+            for batch_folder in batch_folders:
                 batch_number = int(batch_folder.split("-")[-1])
                 run_status_file_path = self.run_status_path.format(batch_folder)
                 dataset = nc.Dataset(run_status_file_path)
@@ -279,6 +281,8 @@ class BatchMergeCommand(BaseCommand):
                         "[blue] to further investigate.[/blue]"
                     )
                     flag = False
+
+                progress_bar.advance(task)
 
         if flag:
             print(
