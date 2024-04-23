@@ -42,13 +42,18 @@ class BatchMergeCommand(BaseCommand):
         with open(self.output_spec_path) as file:
             content = file.readlines()
 
-        variables = []
-        for line in content:
-            variable = line.split(",")[0]
-            variables.append(variable)
+        custom_variables = self._args.vars
 
-        # Name isn't a variable. It's a name. So, we skip that.
-        variables.remove("Name")
+        variables = []
+        if custom_variables:
+            variables = custom_variables[:]
+        else:
+            for line in content:
+                variable = line.split(",")[0]
+                variables.append(variable)
+
+            # Name isn't a variable. It's a name. So, we skip that.
+            variables.remove("Name")
 
         with get_progress_bar() as progress_bar:
             print("[cyan]Merging variable files...[/cyan]")

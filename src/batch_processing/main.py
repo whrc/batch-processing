@@ -112,6 +112,9 @@ def main():
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
     )
+    parser_batch_merge.add_argument(
+        "-v", "--vars", nargs="+", default=[], help="Merge only the given variables"
+    )
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
     parser_run_check = subparsers.add_parser(
