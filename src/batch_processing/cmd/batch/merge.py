@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -14,6 +15,16 @@ class BatchMergeCommand(BaseCommand):
         super().__init__()
         self._args = args
         self.merged_config = os.path.join(self.result_dir, "config")
+
+        self.logger = logging.getLogger(__name__)
+        file_handler = logging.FileHandler(f"{self.exacloud_user_dir}/merge.log")
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
+
+        self.logger.addHandler(file_handler)
 
     def execute(self):
         if not self.validate_run_status():
