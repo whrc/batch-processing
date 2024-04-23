@@ -31,3 +31,9 @@ class BaseCommand(ABC):
     @abstractmethod
     def execute(self):
         pass
+
+    def get_batch_folders(self) -> list:
+        return os.listdir(self.batch_dir)
+
+    def get_total_batch_count(self) -> int:
+        return len(self.get_batch_folders())

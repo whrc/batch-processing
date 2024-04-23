@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -15,9 +16,20 @@ class BatchMergeCommand(BaseCommand):
         self._args = args
         self.merged_config = os.path.join(self.result_dir, "config")
 
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        file_handler = logging.FileHandler(f"{self.exacloud_user_dir}/merge.log")
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
+
+        self.logger.addHandler(file_handler)
+
     def execute(self):
         if not self.validate_run_status():
-            print(
+            self.logger.error(
                 "[bold red]There are unexecuted/failed cells. "
                 "Merging is aborted![/bold red]"
             )
@@ -31,59 +43,73 @@ class BatchMergeCommand(BaseCommand):
         with open(self.output_spec_path) as file:
             content = file.readlines()
 
+        custom_variables = self._args.vars
+
         variables = []
-        for line in content:
-            variable = line.split(",")[0]
-            variables.append(variable)
+        if custom_variables:
+            variables = custom_variables[:]
+        else:
+            for line in content:
+                variable = line.split(",")[0]
+                variables.append(variable)
 
-        # Name isn't a variable. It's a name. So, we skip that.
-        variables.remove("Name")
+            # Name isn't a variable. It's a name. So, we skip that.
+            variables.remove("Name")
 
-        # First handle all the normal outputs.
-        for variable in variables:
-            print("Processing variable:", variable.strip())
-            for stage in STAGES:
-                print("  --> stage:", stage)
+        with get_progress_bar() as progress_bar:
+            print("[cyan]Merging variable files...[/cyan]")
+            task = progress_bar.add_task(
+                "Merging variable files",
+                total=len(variables) * len(STAGES) * len(TIMESTEPS),
+            )
+            # First handle all the normal outputs.
+            for variable in variables:
+                self.logger.debug(f"Processing variable: {variable.strip()}")
+                for stage in STAGES:
+                    self.logger.debug(f"  --> stage: {stage}")
 
-                for timestep in TIMESTEPS:
-                    print("  --> timestep:", timestep)
+                    for timestep in TIMESTEPS:
+                        self.logger.debug(f"  --> timestep: {timestep}")
 
-                    # Determine the file name of the outputs variable
-                    # for the specific run mode and time step
-                    filename = f"{variable.strip()}_{timestep}_{stage}.nc"
-                    print("  --> find", filename)
+                        # Determine the file name of the outputs variable
+                        # for the specific run mode and time step
+                        filename = f"{variable.strip()}_{timestep}_{stage}.nc"
+                        self.logger.debug(f"  --> find: {filename}")
 
-                    # List all the output files for the variable in question
-                    # in every output sub-directory
-                    # (one directory = one sub-regional run)
-                    filelist = subprocess.getoutput(
-                        f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
-                    )
-
-                    if filelist:
-                        # Concatenate all these files together
-                        print("merge files")
-
-                        # Something is messed up with my quoting, as this only
-                        # works with the filelist variable **unquoted** which
-                        # I think is bad practice.
-                        subprocess.run(
-                            ["ncea", "-O", "-h", "-y", "avg"]
-                            + filelist.split()
-                            + [f"{self.result_dir}/{filename}"]
+                        # List all the output files for the variable in question
+                        # in every output sub-directory
+                        # (one directory = one sub-regional run)
+                        filelist = subprocess.getoutput(
+                            f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
                         )
-                    else:
-                        print("  --> nothing to do; no files found...")
 
+                        if filelist:
+                            # Concatenate all these files together
+                            self.logger.debug("merge files")
+
+                            # Something is messed up with my quoting, as this only
+                            # works with the filelist variable **unquoted** which
+                            # I think is bad practice.
+                            subprocess.run(
+                                ["ncea", "-O", "-h", "-y", "avg"]
+                                + filelist.split()
+                                + [f"{self.result_dir}/{filename}"]
+                            )
+                        else:
+                            self.logger.debug("  --> nothing to do; no files found...")
+
+                        progress_bar.advance(task)
+
+        print("[cyan]Merging restart files...[/cyan]")
         # Next handle the restart files
         for stage in RES_STAGES:
             filename = f"restart-{stage}.nc"
-            print("  --> stage:", stage)
+            self.logger.debug(f"  --> stage: {stage}")
 
             filelist = subprocess.getoutput(
                 f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
             )
-            print("THE FILE LIST IS:", filelist)
+            self.logger.debug(f"THE FILE LIST IS: {filelist}")
 
             if filelist:
                 subprocess.run(
@@ -91,14 +117,18 @@ class BatchMergeCommand(BaseCommand):
                     + filelist.split()
                     + [f"{self.result_dir}/{filename}"]
                 )
-            else:
-                print(f"nothing to do - no restart files for stage {stage} found?")
 
+            else:
+                self.logger.debug(
+                    f"nothing to do - no restart files for stage {stage} found?"
+                )
+
+        print("[cyan]Merging run_status files...[/cyan]")
         # Next handle the run_status file
         filelist = subprocess.getoutput(
             f"find {self.batch_dir} -maxdepth 4 -type f -name 'run_status.nc'"
         )
-        print("THE FILE LIST IS:", filelist)
+        self.logger.debug(f"THE FILE LIST IS: {filelist}")
         if filelist:
             # NOTE: for some reason the 'avg' operator does not work with this file!!
             subprocess.run(
@@ -106,21 +136,25 @@ class BatchMergeCommand(BaseCommand):
                 + filelist.split()
                 + [f"{self.result_dir}/run_status.nc"]
             )
-        else:
-            print("nothing to do - no run_status.nc files found?")
 
+        else:
+            self.logger.debug("nothing to do - no run_status.nc files found?")
+
+        print("[cyan]Merging fail_log files...[/cyan]")
         # Finally, handle the fail log
         filelist = subprocess.getoutput(
             f"find {self.batch_dir} -maxdepth 4 -type f -name 'fail_log.txt'"
         )
-        print("THE FILE LIST IS:", filelist)
+        self.logger.debug(f"THE FILE LIST IS: {filelist}")
         if filelist:
             for f in filelist.split():
                 with open(f) as f_read:
                     with open(f"{self.result_dir}/fail_log.txt", "a") as f_write:
                         f_write.write(f_read.read())
+
+            print("[green]Successfully merged fail_log files![/green]")
         else:
-            print("nothing to do - no fail_log.txt files found?")
+            self.logger.debug("nothing to do - no fail_log.txt files found?")
 
         self.copy_config_files()
 
@@ -230,9 +264,10 @@ class BatchMergeCommand(BaseCommand):
             if os.path.isdir(os.path.join(self.batch_dir, folder))
         ]
 
-        progress_bar = get_progress_bar()
-        with progress_bar as bar:
-            for batch_folder in bar.track(batch_folders):
+        print("[cyan]Checking each cell...[/cyan]")
+        with get_progress_bar() as progress_bar:
+            task = progress_bar.add_task("Check each cell", total=len(batch_folders))
+            for batch_folder in batch_folders:
                 batch_number = int(batch_folder.split("-")[-1])
                 run_status_file_path = self.run_status_path.format(batch_folder)
                 dataset = nc.Dataset(run_status_file_path)
@@ -252,6 +287,8 @@ class BatchMergeCommand(BaseCommand):
                         "[blue] to further investigate.[/blue]"
                     )
                     flag = False
+
+                progress_bar.advance(task)
 
         if flag:
             print(
