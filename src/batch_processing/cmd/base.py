@@ -1,7 +1,7 @@
 import logging
 import os
 from abc import ABC, abstractmethod
-from logging.handlers import FileHandler
+from logging import FileHandler
 
 from rich.logging import RichHandler
 
