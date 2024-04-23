@@ -17,7 +17,7 @@ class BatchMergeCommand(BaseCommand):
 
     def execute(self):
         if not self.validate_run_status():
-            print(
+            self.logger.error(
                 "[bold red]There are unexecuted/failed cells. "
                 "Merging is aborted![/bold red]"
             )
@@ -39,19 +39,24 @@ class BatchMergeCommand(BaseCommand):
         # Name isn't a variable. It's a name. So, we skip that.
         variables.remove("Name")
 
+        progress_bar = get_progress_bar()
+        task = progress_bar.add_task(
+            "[cyan]Merging variable files...",
+            total=len(variables) * len(STAGES) * len(TIMESTEPS),
+        )
         # First handle all the normal outputs.
         for variable in variables:
-            print("Processing variable:", variable.strip())
+            self.logger.debug(f"Processing variable: {variable.strip()}")
             for stage in STAGES:
-                print("  --> stage:", stage)
+                self.logger.debug(f"  --> stage: {stage}")
 
                 for timestep in TIMESTEPS:
-                    print("  --> timestep:", timestep)
+                    self.logger.debug(f"  --> timestep: {timestep}")
 
                     # Determine the file name of the outputs variable
                     # for the specific run mode and time step
                     filename = f"{variable.strip()}_{timestep}_{stage}.nc"
-                    print("  --> find", filename)
+                    self.logger.debug(f"  --> find: {filename}")
 
                     # List all the output files for the variable in question
                     # in every output sub-directory
@@ -62,7 +67,7 @@ class BatchMergeCommand(BaseCommand):
 
                     if filelist:
                         # Concatenate all these files together
-                        print("merge files")
+                        self.logger.debug("merge files")
 
                         # Something is messed up with my quoting, as this only
                         # works with the filelist variable **unquoted** which
@@ -73,17 +78,20 @@ class BatchMergeCommand(BaseCommand):
                             + [f"{self.result_dir}/{filename}"]
                         )
                     else:
-                        print("  --> nothing to do; no files found...")
+                        self.logger.debug("  --> nothing to do; no files found...")
 
+                    progress_bar.advance(task)
+
+        print("[cyan]Merging restart files...[/cyan]")
         # Next handle the restart files
         for stage in RES_STAGES:
             filename = f"restart-{stage}.nc"
-            print("  --> stage:", stage)
+            self.logger.debug(f"  --> stage: {stage}")
 
             filelist = subprocess.getoutput(
                 f"find {self.batch_dir} -maxdepth 4 -type f -name '{filename}'"
             )
-            print("THE FILE LIST IS:", filelist)
+            self.logger.debug(f"THE FILE LIST IS: {filelist}")
 
             if filelist:
                 subprocess.run(
@@ -91,14 +99,19 @@ class BatchMergeCommand(BaseCommand):
                     + filelist.split()
                     + [f"{self.result_dir}/{filename}"]
                 )
-            else:
-                print(f"nothing to do - no restart files for stage {stage} found?")
 
+                print("[green]Successfully merged restart files![/green]")
+            else:
+                self.logger.debug(
+                    f"nothing to do - no restart files for stage {stage} found?"
+                )
+
+        print("[cyan]Merging run_status files...[/cyan]")
         # Next handle the run_status file
         filelist = subprocess.getoutput(
             f"find {self.batch_dir} -maxdepth 4 -type f -name 'run_status.nc'"
         )
-        print("THE FILE LIST IS:", filelist)
+        self.logger.debug(f"THE FILE LIST IS: {filelist}")
         if filelist:
             # NOTE: for some reason the 'avg' operator does not work with this file!!
             subprocess.run(
@@ -106,21 +119,26 @@ class BatchMergeCommand(BaseCommand):
                 + filelist.split()
                 + [f"{self.result_dir}/run_status.nc"]
             )
-        else:
-            print("nothing to do - no run_status.nc files found?")
 
+            print("[green]Successfully merged run_status files![/green]")
+        else:
+            self.logger.debug("nothing to do - no run_status.nc files found?")
+
+        print("[cyan]Merging fail_log files...[/cyan]")
         # Finally, handle the fail log
         filelist = subprocess.getoutput(
             f"find {self.batch_dir} -maxdepth 4 -type f -name 'fail_log.txt'"
         )
-        print("THE FILE LIST IS:", filelist)
+        self.logger.debug(f"THE FILE LIST IS: {filelist}")
         if filelist:
             for f in filelist.split():
                 with open(f) as f_read:
                     with open(f"{self.result_dir}/fail_log.txt", "a") as f_write:
                         f_write.write(f_read.read())
+
+            print("[green]Successfully merged fail_log files![/green]")
         else:
-            print("nothing to do - no fail_log.txt files found?")
+            self.logger.debug("nothing to do - no fail_log.txt files found?")
 
         self.copy_config_files()
 

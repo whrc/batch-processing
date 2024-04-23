@@ -1,5 +1,9 @@
+import logging
 import os
 from abc import ABC, abstractmethod
+from logging.handlers import FileHandler
+
+from rich.logging import RichHandler
 
 
 class BaseCommand(ABC):
@@ -28,6 +32,26 @@ class BaseCommand(ABC):
 
         self.run_status_path = f"{self.batch_dir}/{{}}/output/run_status.nc"
 
+        self.log_level = logging.DEBUG
+        self.log_format = "%(message)s"
+        self.log_file_path = f"{self.exacloud_user_dir}/batch-processing.log"
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(self.log_level)
+        file_handler = FileHandler(self.log_file_path)
+        file_handler.setFormatter(logging.Formatter(self.log_format))
+
+        logging.basicConfig(
+            format=self.log_format,
+            level=self.log_level,
+            handlers=[RichHandler(rich_tracebacks=True, markup=True), file_handler],
+        )
+
     @abstractmethod
     def execute(self):
         pass
+
+    def get_batch_folders(self) -> list:
+        return os.listdir(self.batch_dir)
+
+    def get_total_batch_count(self) -> int:
+        return len(self.get_batch_folders())
