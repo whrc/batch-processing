@@ -17,6 +17,7 @@ class BatchMergeCommand(BaseCommand):
         self.merged_config = os.path.join(self.result_dir, "config")
 
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(f"{self.exacloud_user_dir}/merge.log")
         file_handler.setLevel(logging.DEBUG)
         file_formatter = logging.Formatter(
