@@ -5,6 +5,8 @@ import subprocess
 import sys
 import time
 
+from rich import print
+
 from .base import BaseCommand
 
 
@@ -13,8 +15,8 @@ class RunCheckCommand(BaseCommand):
         super().__init__()
         self.log_file_path = os.path.join(self.exacloud_user_dir, "run_check.out")
 
-        self.self.logger = logging.getLogger(__name__)
-        self.self.logger.setLevel(logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(self.log_file_path)
         file_handler.setLevel(logging.DEBUG)
         file_formatter = logging.Formatter(
@@ -22,7 +24,7 @@ class RunCheckCommand(BaseCommand):
         )
         file_handler.setFormatter(file_formatter)
 
-        self.self.logger.addHandler(file_handler)
+        self.logger.addHandler(file_handler)
 
         self._args = args
         self.keywords = ["error", "non-exit", "aborted"]
