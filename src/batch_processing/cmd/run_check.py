@@ -13,7 +13,7 @@ class RunCheckCommand(BaseCommand):
         super().__init__()
         self.log_file_path = os.path.join(self.exacloud_user_dir, "run_check.out")
 
-        self.self.logger = logging.getself.logger(__name__)
+        self.self.logger = logging.getLogger(__name__)
         self.self.logger.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(self.log_file_path)
         file_handler.setLevel(logging.DEBUG)

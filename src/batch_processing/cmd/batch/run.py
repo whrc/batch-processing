@@ -6,7 +6,6 @@ from rich.progress import track
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
-from batch_processing.cmd.run_check import RunCheckCommand
 
 
 class BatchRunCommand(BaseCommand):
@@ -33,4 +32,3 @@ class BatchRunCommand(BaseCommand):
                 time.sleep(self.SLEEP_TIME)
 
         ElapsedCommand(self._args).execute()
-        RunCheckCommand(self._args).execute()

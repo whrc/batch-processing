@@ -8,6 +8,7 @@ from batch_processing.cmd.batch.split import BatchSplitCommand
 from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
+from batch_processing.cmd.run_check import RunCheckCommand
 
 
 def main():
@@ -153,6 +154,9 @@ def main():
         ),
     )
     parser_input.set_defaults(func=lambda args: InputCommand(args).execute())
+
+    parser_run_check = subparsers.add_parser("run_check", help="todo")
+    parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
 
     args = parser.parse_args()
 
