@@ -130,6 +130,7 @@ class BatchSplitCommand(BaseCommand):
         number_batches = batch
         print(f"[green]Split cells into {number_batches} batches...[/green]")
 
+        # todo: something's off with the progress bar. rewrite it using the new method
         # MODIFY THE CONFIG FILE FOR EACH BATCH
         print(
             "[blue]Modifying each batch's config file; "
