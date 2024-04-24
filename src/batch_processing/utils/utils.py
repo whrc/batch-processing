@@ -11,6 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from google.cloud import storage
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 
 def run_command(command: list) -> None:
@@ -259,3 +266,13 @@ def static_timeseries(data_tr, data_sc, output, type_var, type_spread, file_name
     ax.set_title(output + " over Time with " + spreadtext)
     ax.legend()
     plt.savefig(file_name)
+
+
+def get_progress_bar():
+    return Progress(
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TextColumn("•"),
+        TimeElapsedColumn(),
+    )

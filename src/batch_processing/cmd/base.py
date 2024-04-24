@@ -26,6 +26,14 @@ class BaseCommand(ABC):
         self.batch_dir = f"{self.output_dir}/batch-run"
         self.result_dir = f"{self.exacloud_user_dir}/all-merged"
 
+        self.run_status_path = f"{self.batch_dir}/{{}}/output/run_status.nc"
+
     @abstractmethod
     def execute(self):
         pass
+
+    def get_batch_folders(self) -> list:
+        return os.listdir(self.batch_dir)
+
+    def get_total_batch_count(self) -> int:
+        return len(self.get_batch_folders())

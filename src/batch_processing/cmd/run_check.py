@@ -26,7 +26,7 @@ class RunCheckCommand(BaseCommand):
         self.log_file_path = os.path.join(self.exacloud_user_dir, "run_check.out")
         logging.basicConfig(
             level=logging.NOTSET,
-            filename=f"{self.log_file_path}",
+            filename=f"{os.path.join(self.exacloud_user_dir, 'run_check.out')}",
         )
 
         self._args = args
