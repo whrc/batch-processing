@@ -32,5 +32,5 @@ class BatchRunCommand(BaseCommand):
             if (index + 1) % self.BATCH_INTERVAL == 0:
                 time.sleep(self.SLEEP_TIME)
 
-        ElapsedCommand().execute(self._args)
-        RunCheckCommand().execute(self._args)
+        ElapsedCommand(self._args).execute()
+        RunCheckCommand(self._args).execute()
