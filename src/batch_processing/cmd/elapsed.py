@@ -14,7 +14,7 @@ class ElapsedCommand(BaseCommand):
         super().__init__()
         self._args = args
         self._file_path = f"{self.exacloud_user_dir}/elapsed_time.txt"
-        self._sleep_time = 10
+        self._sleep_time = 60
 
     def get_now_and_write(self, s: str):
         now = datetime.now().ctime()
@@ -29,23 +29,41 @@ class ElapsedCommand(BaseCommand):
                 sys.exit(0)
         except OSError as e:
             print(
-                f"[red bold]The fork operation is failed. Couldn't created the child process: {e}[/red bold]"
+                "[red bold]The fork operation is failed. "
+                f"Couldn't created the child process: {e}[/red bold]"
             )
             sys.exit(e)
 
         # continue the execution from the child process
-        self.get_now_and_write("start datetime: ")
+        start_time = datetime.now()
+        with open(self._file_path, "a") as file:
+            file.write("start datetime: " + start_time.ctime() + "\n")
+
         print(
-            f"[blue bold]Timer has started. Check {self._file_path} for the results.[/blue bold]"
+            "[blue bold]Timer has started. "
+            f"Check {self._file_path} for the results.[/blue bold]"
         )
         while True:
             queue = get_slurm_queue()
             if not queue:
-                self.get_now_and_write("end datetime: ")
+                end_time = datetime.now()
+                time_difference = end_time - start_time
+                days = time_difference.days
+                hours, remainder = divmod(time_difference.seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                formatted_time = (
+                    f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
+                )
+
+                with open(self._file_path, "a") as file:
+                    file.write("end datetime: " + end_time.ctime() + "\n")
+                    file.write("elapsed time: " + formatted_time + "\n")
+
                 break
 
             time.sleep(self._sleep_time)
 
         print(
-            f"[green bold]The timer has stopped. Check {self._file_path} for the results.[/green bold]"
+            "[green bold]The timer has stopped. "
+            f"Check {self._file_path} for the results.[/green bold]"
         )

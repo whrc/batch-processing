@@ -5,11 +5,9 @@ from batch_processing.cmd.batch.merge import BatchMergeCommand
 from batch_processing.cmd.batch.postprocess import BatchPostprocessCommand
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
-from batch_processing.cmd.elapsed import ElapsedCommand
 from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
-from batch_processing.cmd.run_check import RunCheckCommand
 
 
 def main():
@@ -117,15 +115,6 @@ def main():
     )
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
-    parser_run_check = subparsers.add_parser(
-        "run_check",
-        help=(
-            "Spawns a background job to track failed jobs and re-submits them to Slurm."
-        ),
-    )
-
-    parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
-
     parser_monitoring = subparsers.add_parser(
         "monitor",
         help=(
@@ -164,11 +153,6 @@ def main():
         ),
     )
     parser_input.set_defaults(func=lambda args: InputCommand(args).execute())
-
-    parser_elapsed = subparsers.add_parser(
-        "elapsed", help="Measures the total elapsed time for running a dataset"
-    )
-    parser_elapsed.set_defaults(func=lambda args: ElapsedCommand(args).execute())
 
     args = parser.parse_args()
 
