@@ -121,6 +121,12 @@ def main():
     parser_batch_merge.add_argument(
         "-v", "--vars", nargs="+", default=[], help="Merge only the given variables"
     )
+    parser_batch_merge.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Continue merging even if not all cells ran successfully.",
+    )
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
     parser_monitoring = subparsers.add_parser(

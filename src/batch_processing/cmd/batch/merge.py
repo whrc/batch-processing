@@ -29,10 +29,12 @@ class BatchMergeCommand(BaseCommand):
 
     def execute(self):
         if not self.validate_run_status():
-            self.logger.error(
-                "[bold red]There are unexecuted/failed cells. "
-                "Merging is aborted![/bold red]"
-            )
+            if not self._args.force:
+                self.logger.error(
+                    "[bold red]There are unexecuted/failed cells. "
+                    "Merging is aborted![/bold red]"
+                )
+                return
 
         STAGES = ["eq", "sp", "tr", "sc"]
         RES_STAGES = ["pr", "eq", "sp", "tr", "sc"]
