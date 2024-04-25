@@ -191,7 +191,7 @@ class BatchSplitCommand(BaseCommand):
 
         cd /home/$USER/dvm-dos-tem
 
-        mpirun -np {self._args.nproc} ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l disabled --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
+        mpirun -np {self._args.nproc} ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l {self._args.log_level} --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
         """.format(batch, cells_in_batch, work_dir)
             )
             with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:

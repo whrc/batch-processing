@@ -101,6 +101,13 @@ def main():
     parser_batch_split.add_argument(
         "-n", type=int, default=0, help="Number of SCENARIO years to run"
     )
+    parser_batch_split.add_argument(
+        "-l",
+        "--log-level",
+        choices=["debug", "info", "note", "warn", "err", "fatal"],
+        default="disabled",
+        help="Sets the log level",
+    )
     parser_batch_split.set_defaults(func=lambda args: BatchSplitCommand(args).execute())
 
     parser_batch_run = batch_subparsers.add_parser(
