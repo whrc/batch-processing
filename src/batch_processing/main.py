@@ -84,9 +84,6 @@ def main():
         help="Specificy the Slurm partition. By default, spot",
     )
     parser_batch_split.add_argument(
-        "--nproc", type=int, default=1, help="Number of CPUs to utilize"
-    )
-    parser_batch_split.add_argument(
         "-p", type=int, default=0, help="Number of PRE RUN years to run"
     )
     parser_batch_split.add_argument(
