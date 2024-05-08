@@ -9,7 +9,7 @@ from rich import print
 from rich.progress import track
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import clean_and_load_json, mkdir_p
+from batch_processing.utils.utils import clean_and_load_json, get_progress_bar, mkdir_p
 
 # This script is used to split a dvmdostem run into "sub domains" that can be
 # run individually (submitted to the queue manager) and then merged together
@@ -150,52 +150,56 @@ class BatchSplitCommand(BaseCommand):
             with open(work_dir + f"/batch-{batch_num}/config.js", "w") as f:
                 f.write(output_str)
 
-        # SUBMIT SBATCH SCRIPT FOR EACH BATCH
-        for batch in track(
-            range(0, number_batches),
-            description="[blue]Writing sbatch script for each batch[/blue]",
-            total=number_batches,
-        ):
-            with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
-                cells_in_batch = np.count_nonzero(runmask.variables["run"])
-
-            assert (
-                cells_in_batch > 0
-            ), "[red]PROBLEM! Groups with no cells activated to run![/red]"
-
-            slurm_runner_scriptlet = textwrap.dedent(
-                f"""\
-        #!/bin/bash -l
-
-        # Job name, for clarity
-        #SBATCH --job-name="ddt-batch-{batch}"
-
-        # Partition specification
-        #SBATCH -p {self._args.slurm_partition}
-
-        # Log the output
-        #SBATCH -o /mnt/exacloud/{self.user}/slurm-logs/batch-{batch}.out
-
-        # Number of MPI tasks
-        #SBATCH -N 1
-
-        echo $SLURM_JOB_NODELIST
-
-        ulimit -s unlimited
-        ulimit -l unlimited
-
-        # Load up my custom paths stuff
-        . /dependencies/setup-env.sh
-        . /etc/profile.d/z00_lmod.sh
-        module load openmpi
-
-        cd /home/$USER/dvm-dos-tem
-
-        mpirun --use-hwthread-cpus ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l {self._args.log_level} --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
-        """.format(batch, cells_in_batch, work_dir)
+        with get_progress_bar as progress_bar:
+            task = progress_bar.add_task(
+                "Writing sbatch script for each batch", total=number_batches
             )
-            with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
-                f.write(slurm_runner_scriptlet)
+            # SUBMIT SBATCH SCRIPT FOR EACH BATCH
+            for batch in range(0, number_batches):
+                with nc.Dataset(
+                    work_dir + f"/batch-{batch}/run-mask.nc", "r"
+                ) as runmask:
+                    cells_in_batch = np.count_nonzero(runmask.variables["run"])
+
+                assert (
+                    cells_in_batch > 0
+                ), "[red]PROBLEM! Groups with no cells activated to run![/red]"
+
+                slurm_runner_scriptlet = textwrap.dedent(
+                    f"""\
+            #!/bin/bash -l
+
+            # Job name, for clarity
+            #SBATCH --job-name="ddt-batch-{batch}"
+
+            # Partition specification
+            #SBATCH -p {self._args.slurm_partition}
+
+            # Log the output
+            #SBATCH -o /mnt/exacloud/{self.user}/slurm-logs/batch-{batch}.out
+
+            # Number of MPI tasks
+            #SBATCH -N 1
+
+            echo $SLURM_JOB_NODELIST
+
+            ulimit -s unlimited
+            ulimit -l unlimited
+
+            # Load up my custom paths stuff
+            . /dependencies/setup-env.sh
+            . /etc/profile.d/z00_lmod.sh
+            module load openmpi
+
+            cd /home/$USER/dvm-dos-tem
+
+            mpirun --use-hwthread-cpus ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l {self._args.log_level} --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
+            """.format(batch, cells_in_batch, work_dir)
+                )
+                with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
+                    f.write(slurm_runner_scriptlet)
+
+                task.advance()
 
         log_files = os.listdir(self.slurm_log_dir)
         for file_name in track(
