@@ -28,7 +28,4 @@ class BatchRunCommand(BaseCommand):
             slurm_script_path = f"{self.batch_dir}/batch-{index}/slurm_runner.sh"
             subprocess.check_output(["sbatch", slurm_script_path])
 
-            if (index + 1) % self.BATCH_INTERVAL == 0:
-                time.sleep(self.SLEEP_TIME)
-
         ElapsedCommand(self._args).execute()

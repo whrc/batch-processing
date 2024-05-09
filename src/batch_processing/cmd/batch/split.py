@@ -9,40 +9,7 @@ from rich import print
 from rich.progress import track
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import clean_and_load_json, mkdir_p
-
-# This script is used to split a dvmdostem run into "sub domains" that can be
-# run individually (submitted to the queue manager) and then merged together
-# at the end. In this case, the "full domain" is NOT the entire IEM domain, but
-# is simply the full area that you are trying to run, i.e. a 10x10 region, or
-# a 50x50 region.
-
-# 1) Log on to atlas, cd into your dvmdostem directory.
-#
-# 2) Checkout desired git version, setup environment.
-#
-# 3) Compile (make).
-#
-# 4) Setup your run as though you were going to run serially (single
-#    processor). Configure as necessary the following things:
-#      - paths in the config file to the input data and full-domain run mask
-#      - adjust the output_spec.csv to your needs
-#      - turn outputs on/off for various run-stages (eq, sp, etc)
-#      - path to output data is not important - it will be overwritten
-#
-# 5) Figure out how many cells you want per batch, and set the constant below.
-#
-# 6) Run this script.
-#
-# This script will split your run into however many batches are necessary to
-# run all the cells and keep the max cells per batch in line with the constant
-# you set below. The script will setup two directory hierarchies: one for the
-# outputs of the individual batch runs and one for the "staging" area for each
-# batch run. The staging area allows each run to have a different config file
-# and different run mask (which is what actually controls which cells are
-# in which batch. Then the script will submit a job to slurm for each batch.
-#
-# To process the outputs, use the "batch_merge.sh" script.
+from batch_processing.utils.utils import clean_and_load_json, get_progress_bar, mkdir_p
 
 
 class BatchSplitCommand(BaseCommand):
@@ -109,34 +76,31 @@ class BatchSplitCommand(BaseCommand):
         batch = 0
         cells_in_sublist = 0
         coord_list = list(zip(nz_ycoords, nz_xcoords))
-        for i, cell in track(
-            enumerate(coord_list),
-            description="[blue]Turning on pixels in each batch's run mask[/blue]",
-            total=nbatches,
-        ):
-            with nc.Dataset(
-                work_dir + f"/batch-{batch}/run-mask.nc", "a"
-            ) as grp_runmask:
+
+        with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "a") as grp_runmask:
+            for i, cell in track(enumerate(coord_list), description="[blue]Turning on pixels in each batch's run mask[/blue]", total=len(coord_list)):
                 grp_runmask.variables["run"][cell] = True
                 cells_in_sublist += 1
 
-            if (cells_in_sublist == self._cells_per_batch) or (
-                i == len(coord_list) - 1
-            ):
-                batch += 1
-                cells_in_sublist = 0
+                if cells_in_sublist == self._cells_per_batch or i == len(coord_list) - 1:
+                    # Update the file in batches
+                    grp_runmask.sync()
+                    cells_in_sublist = 0
+
+                    # If not the last batch, open a new batch file
+                    if i != len(coord_list) - 1:
+                        batch += 1
+                        grp_runmask.close()
+                        grp_runmask = nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "a")
+
+            grp_runmask.sync()
 
         # SUMMARIZE
-        number_batches = batch
+        number_batches = batch + 1
         print(f"[green]Split cells into {number_batches} batches...[/green]")
 
-        # todo: something's off with the progress bar. rewrite it using the new method
         # MODIFY THE CONFIG FILE FOR EACH BATCH
-        print(
-            "[blue]Modifying each batch's config file; "
-            "changing path to run mask and to output directory...[/blue]"
-        )
-        for batch_num in track(range(0, number_batches)):
+        for batch_num in track(range(0, number_batches), description="[blue]Modifying each batch's config file changing path to run mask and to output directory...[/blue]"):
             with open(work_dir + f"/batch-{batch_num}/config.js") as f:
                 input_string = f.read()
 
@@ -150,52 +114,56 @@ class BatchSplitCommand(BaseCommand):
             with open(work_dir + f"/batch-{batch_num}/config.js", "w") as f:
                 f.write(output_str)
 
-        # SUBMIT SBATCH SCRIPT FOR EACH BATCH
-        for batch in track(
-            range(0, number_batches),
-            description="[blue]Writing sbatch script for each batch[/blue]",
-            total=number_batches,
-        ):
-            with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "r") as runmask:
-                cells_in_batch = np.count_nonzero(runmask.variables["run"])
-
-            assert (
-                cells_in_batch > 0
-            ), "[red]PROBLEM! Groups with no cells activated to run![/red]"
-
-            slurm_runner_scriptlet = textwrap.dedent(
-                f"""\
-        #!/bin/bash -l
-
-        # Job name, for clarity
-        #SBATCH --job-name="ddt-batch-{batch}"
-
-        # Partition specification
-        #SBATCH -p {self._args.slurm_partition}
-
-        # Log the output
-        #SBATCH -o /mnt/exacloud/{self.user}/slurm-logs/batch-{batch}.out
-
-        # Number of MPI tasks
-        #SBATCH -N 1
-
-        echo $SLURM_JOB_NODELIST
-
-        ulimit -s unlimited
-        ulimit -l unlimited
-
-        # Load up my custom paths stuff
-        . /dependencies/setup-env.sh
-        . /etc/profile.d/z00_lmod.sh
-        module load openmpi
-
-        cd /home/$USER/dvm-dos-tem
-
-        mpirun --use-hwthread-cpus ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l {self._args.log_level} --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
-        """.format(batch, cells_in_batch, work_dir)
+        with get_progress_bar() as progress_bar:
+            task = progress_bar.add_task(
+                "Writing sbatch script for each batch", total=number_batches
             )
-            with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
-                f.write(slurm_runner_scriptlet)
+            # SUBMIT SBATCH SCRIPT FOR EACH BATCH
+            for batch in range(0, number_batches):
+                with nc.Dataset(
+                    work_dir + f"/batch-{batch}/run-mask.nc", "r"
+                ) as runmask:
+                    cells_in_batch = np.count_nonzero(runmask.variables["run"])
+
+                assert (
+                    cells_in_batch > 0
+                ), "[red]PROBLEM! Groups with no cells activated to run![/red]"
+
+                slurm_runner_scriptlet = textwrap.dedent(
+                    f"""\
+            #!/bin/bash -l
+
+            # Job name, for clarity
+            #SBATCH --job-name="ddt-batch-{batch}"
+
+            # Partition specification
+            #SBATCH -p {self._args.slurm_partition}
+
+            # Log the output
+            #SBATCH -o /mnt/exacloud/{self.user}/slurm-logs/batch-{batch}.out
+
+            # Number of MPI tasks
+            #SBATCH -N 1
+
+            echo $SLURM_JOB_NODELIST
+
+            ulimit -s unlimited
+            ulimit -l unlimited
+
+            # Load up my custom paths stuff
+            . /dependencies/setup-env.sh
+            . /etc/profile.d/z00_lmod.sh
+            module load openmpi
+
+            cd /home/$USER/dvm-dos-tem
+
+            mpirun --use-hwthread-cpus ./dvmdostem -f {work_dir}/batch-{batch}/config.js -l {self._args.log_level} --max-output-volume=-1 -p {self._args.p} -e {self._args.e} -s {self._args.s} -t {self._args.t} -n {self._args.n}
+            """.format(batch, cells_in_batch, work_dir)
+                )
+                with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
+                    f.write(slurm_runner_scriptlet)
+
+                progress_bar.advance(task)
 
         log_files = os.listdir(self.slurm_log_dir)
         for file_name in track(
