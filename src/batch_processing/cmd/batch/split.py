@@ -11,39 +11,6 @@ from rich.progress import track
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import clean_and_load_json, get_progress_bar, mkdir_p
 
-# This script is used to split a dvmdostem run into "sub domains" that can be
-# run individually (submitted to the queue manager) and then merged together
-# at the end. In this case, the "full domain" is NOT the entire IEM domain, but
-# is simply the full area that you are trying to run, i.e. a 10x10 region, or
-# a 50x50 region.
-
-# 1) Log on to atlas, cd into your dvmdostem directory.
-#
-# 2) Checkout desired git version, setup environment.
-#
-# 3) Compile (make).
-#
-# 4) Setup your run as though you were going to run serially (single
-#    processor). Configure as necessary the following things:
-#      - paths in the config file to the input data and full-domain run mask
-#      - adjust the output_spec.csv to your needs
-#      - turn outputs on/off for various run-stages (eq, sp, etc)
-#      - path to output data is not important - it will be overwritten
-#
-# 5) Figure out how many cells you want per batch, and set the constant below.
-#
-# 6) Run this script.
-#
-# This script will split your run into however many batches are necessary to
-# run all the cells and keep the max cells per batch in line with the constant
-# you set below. The script will setup two directory hierarchies: one for the
-# outputs of the individual batch runs and one for the "staging" area for each
-# batch run. The staging area allows each run to have a different config file
-# and different run mask (which is what actually controls which cells are
-# in which batch. Then the script will submit a job to slurm for each batch.
-#
-# To process the outputs, use the "batch_merge.sh" script.
-
 
 class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
