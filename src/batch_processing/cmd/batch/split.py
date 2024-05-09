@@ -109,34 +109,31 @@ class BatchSplitCommand(BaseCommand):
         batch = 0
         cells_in_sublist = 0
         coord_list = list(zip(nz_ycoords, nz_xcoords))
-        for i, cell in track(
-            enumerate(coord_list),
-            description="[blue]Turning on pixels in each batch's run mask[/blue]",
-            total=nbatches,
-        ):
-            with nc.Dataset(
-                work_dir + f"/batch-{batch}/run-mask.nc", "a"
-            ) as grp_runmask:
+
+        with nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "a") as grp_runmask:
+            for i, cell in track(enumerate(coord_list), description="[blue]Turning on pixels in each batch's run mask[/blue]", total=len(coord_list)):
                 grp_runmask.variables["run"][cell] = True
                 cells_in_sublist += 1
 
-            if (cells_in_sublist == self._cells_per_batch) or (
-                i == len(coord_list) - 1
-            ):
-                batch += 1
-                cells_in_sublist = 0
+                if cells_in_sublist == self._cells_per_batch or i == len(coord_list) - 1:
+                    # Update the file in batches
+                    grp_runmask.sync()
+                    cells_in_sublist = 0
+
+                    # If not the last batch, open a new batch file
+                    if i != len(coord_list) - 1:
+                        batch += 1
+                        grp_runmask.close()
+                        grp_runmask = nc.Dataset(work_dir + f"/batch-{batch}/run-mask.nc", "a")
+
+            grp_runmask.sync()
 
         # SUMMARIZE
         number_batches = batch
         print(f"[green]Split cells into {number_batches} batches...[/green]")
 
-        # todo: something's off with the progress bar. rewrite it using the new method
         # MODIFY THE CONFIG FILE FOR EACH BATCH
-        print(
-            "[blue]Modifying each batch's config file; "
-            "changing path to run mask and to output directory...[/blue]"
-        )
-        for batch_num in track(range(0, number_batches)):
+        for batch_num in track(range(0, number_batches), description="[blue]Modifying each batch's config file changing path to run mask and to output directory...[/blue]"):
             with open(work_dir + f"/batch-{batch_num}/config.js") as f:
                 input_string = f.read()
 
@@ -150,7 +147,7 @@ class BatchSplitCommand(BaseCommand):
             with open(work_dir + f"/batch-{batch_num}/config.js", "w") as f:
                 f.write(output_str)
 
-        with get_progress_bar as progress_bar:
+        with get_progress_bar() as progress_bar:
             task = progress_bar.add_task(
                 "Writing sbatch script for each batch", total=number_batches
             )
@@ -199,7 +196,7 @@ class BatchSplitCommand(BaseCommand):
                 with open(work_dir + f"/batch-{batch}/slurm_runner.sh", "w") as f:
                     f.write(slurm_runner_scriptlet)
 
-                task.advance()
+                progress_bar.advance(task)
 
         log_files = os.listdir(self.slurm_log_dir)
         for file_name in track(
