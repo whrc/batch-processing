@@ -96,7 +96,7 @@ class BatchSplitCommand(BaseCommand):
             grp_runmask.sync()
 
         # SUMMARIZE
-        number_batches = batch
+        number_batches = batch + 1
         print(f"[green]Split cells into {number_batches} batches...[/green]")
 
         # MODIFY THE CONFIG FILE FOR EACH BATCH
