@@ -276,3 +276,21 @@ def get_progress_bar():
         TextColumn("•"),
         TimeElapsedColumn(),
     )
+
+
+def get_project_root() -> Path:
+    return Path(__file__).parent.parent.parent.parent
+
+
+def create_chunks(dim_size, chunk_count):
+    """Create chunk boundaries for slicing the dataset."""
+    chunks = []
+    chunk_size = dim_size // chunk_count
+    remainder = dim_size % chunk_count
+
+    for i in range(chunk_count):
+        start = i * chunk_size + min(i, remainder)
+        end = start + chunk_size + (1 if i < remainder else 0)
+        chunks.append((start, end))
+
+    return chunks

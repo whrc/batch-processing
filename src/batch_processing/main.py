@@ -71,6 +71,36 @@ def main():
         "new_split",
     )
 
+    parser_batch_new_split.add_argument(
+        "-sp",
+        "--slurm-partition",
+        choices=["spot", "compute"],
+        default="spot",
+        help="Specificy the Slurm partition. By default, spot",
+    )
+    parser_batch_new_split.add_argument(
+        "-p", type=int, default=0, help="Number of PRE RUN years to run"
+    )
+    parser_batch_new_split.add_argument(
+        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run"
+    )
+    parser_batch_new_split.add_argument(
+        "-s", type=int, default=0, help="Number of SPINUP years to run"
+    )
+    parser_batch_new_split.add_argument(
+        "-t", type=int, default=0, help="Number of TRANSIENT years to run"
+    )
+    parser_batch_new_split.add_argument(
+        "-n", type=int, default=0, help="Number of SCENARIO years to run"
+    )
+    parser_batch_new_split.add_argument(
+        "-l",
+        "--log-level",
+        choices=["debug", "info", "note", "warn", "err", "fatal"],
+        default="disabled",
+        help="Sets the log level",
+    )
+
     parser_batch_new_split.set_defaults(func=lambda args: BatchNewSplitCommand(args).execute())
 
     parser_batch_split = batch_subparsers.add_parser(
