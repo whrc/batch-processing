@@ -79,6 +79,15 @@ def main():
         help="Specificy the Slurm partition. By default, spot",
     )
     parser_batch_new_split.add_argument(
+        "-i",
+        "--input-path",
+        required=True,
+        help=(
+            "Path to the directory that contains the input files."
+            "Example: $HOME/input/four-basins"
+        ),
+    )
+    parser_batch_new_split.add_argument(
         "-p", type=int, default=0, help="Number of PRE RUN years to run"
     )
     parser_batch_new_split.add_argument(

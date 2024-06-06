@@ -17,7 +17,6 @@ from batch_processing.utils.utils import (
     get_project_root,
 )
 
-OUTPUT_DIR = "/mnt/exacloud/dteber_woodwellclimate_org/output/"
 BATCH_DIRS = []
 BATCH_INPUT_DIRS = []
 INPUT_FILES = [
@@ -34,7 +33,6 @@ INPUT_FILES = [
     "projected-climate.nc",
     "historic-climate.nc",
 ]
-INPUT_DIR = "/mnt/exacloud/dteber_woodwellclimate_org/sliced-inputs-six"
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
 
 
@@ -163,8 +161,12 @@ class BatchNewSplitCommand(BaseCommand):
         tasks = []
         chunk_size = 0
         # Iterate over sliced input directories and input files
-        for sliced_dir, input_file in product(os.listdir(INPUT_DIR), INPUT_FILES):
-            input_file_path = os.path.join(INPUT_DIR, sliced_dir, input_file)
+        for sliced_dir, input_file in product(
+            os.listdir(self._args.input_path), INPUT_FILES
+        ):
+            input_file_path = os.path.join(
+                self._args.input_path, sliced_dir, input_file
+            )
             if chunk_size == 0:
                 chunk_range = sliced_dir.split("-")[-1]
                 start, end = (int(val) for val in chunk_range.split("_"))
