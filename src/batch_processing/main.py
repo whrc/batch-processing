@@ -5,6 +5,7 @@ from batch_processing.cmd.batch.merge import BatchMergeCommand
 from batch_processing.cmd.batch.postprocess import BatchPostprocessCommand
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
+from batch_processing.cmd.batch.new_split import BatchNewSplitCommand
 from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
@@ -65,6 +66,12 @@ def main():
     parser_batch_postprocess.set_defaults(
         func=lambda args: BatchPostprocessCommand(args).execute()
     )
+
+    parser_batch_new_split = batch_subparsers.add_parser(
+        "new_split",
+    )
+
+    parser_batch_new_split.set_defaults(func=lambda args: BatchNewSplitCommand(args).execute())
 
     parser_batch_split = batch_subparsers.add_parser(
         "split",
