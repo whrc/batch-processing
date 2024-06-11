@@ -255,3 +255,6 @@ def split_file(start_index, end_index, input_path, split_dimension):
                     ]
                 )
         print("done splitting ", input_file)
+
+# todo: spawn a processing node to do the splitting
+# do this for only iem dataset

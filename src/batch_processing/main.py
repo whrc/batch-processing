@@ -3,6 +3,7 @@ import textwrap
 
 from batch_processing.cmd.batch.merge import BatchMergeCommand
 from batch_processing.cmd.batch.new_split import BatchNewSplitCommand
+from batch_processing.cmd.batch.new_run import BatchNewRunCommand
 from batch_processing.cmd.batch.postprocess import BatchPostprocessCommand
 from batch_processing.cmd.batch.run import BatchRunCommand
 from batch_processing.cmd.batch.split import BatchSplitCommand
@@ -159,6 +160,11 @@ def main():
         "run", help="Submit the batches to the Slurm queue"
     )
     parser_batch_run.set_defaults(func=lambda args: BatchRunCommand(args).execute())
+
+    parser_batch_new_run = batch_subparsers.add_parser(
+        "new_run", help="Submit the batches to the Slurm queue"
+    )
+    parser_batch_new_run.set_defaults(func=lambda args: BatchNewRunCommand(args).execute())
 
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
