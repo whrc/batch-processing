@@ -144,6 +144,19 @@ class BatchNewSplitCommand(BaseCommand):
             "Either check the path or fix the input data."
         )
 
+    def create_chunks(self, dim_size, chunk_count):
+        """Create chunk boundaries for slicing the dataset."""
+        chunks = []
+        chunk_size = dim_size // chunk_count
+        remainder = dim_size % chunk_count
+
+        for i in range(chunk_count):
+            start = i * chunk_size + min(i, remainder)
+            end = start + chunk_size + (1 if i < remainder else 0)
+            chunks.append((start, end))
+
+        return chunks
+
     def execute(self):
         X, Y, use_parallel = self._calculate_dimensions()
 
@@ -157,7 +170,7 @@ class BatchNewSplitCommand(BaseCommand):
         print("Dimension size:", DIMENSION_SIZE)
 
         print("Cleaning up the existing directories")
-        pattern = re.compile(r"^batch_\d+$")
+        pattern = re.compile(r"^exp_batch_\d+$")
         output_dir = Path(self.output_dir)
         to_be_removed = [
             d for d in output_dir.iterdir() if d.is_dir() and pattern.match(d.name)
@@ -169,7 +182,7 @@ class BatchNewSplitCommand(BaseCommand):
         print("Set up batch directories")
         os.makedirs(self.output_dir, exist_ok=True)
         for index in range(DIMENSION_SIZE):
-            path = os.path.join(self.output_dir, f"batch_{index}")
+            path = os.path.join(self.output_dir, f"exp_batch_{index}")
             BATCH_DIRS.append(path)
 
             path = os.path.join(path, "input")
@@ -182,15 +195,17 @@ class BatchNewSplitCommand(BaseCommand):
         if use_parallel:
             tasks = []
             sliced_dirs = os.listdir(self._args.input_path)
-            chunk_size = self._get_chunk_size(sliced_dirs[0])
+            # chunk_size = self._get_chunk_size(sliced_dirs[0])
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
+                chunks = self.create_chunks(DIMENSION_SIZE, os.cpu_count())
                 input_file_path = os.path.join(
                     self._args.input_path, sliced_dir, input_file
                 )
-                tasks.append(
-                    (0, chunk_size, input_file_path, input_file, SPLIT_DIMENSION)
-                )
+                for start_chunk, end_chunk in chunks:
+                    tasks.append(
+                        (start_chunk, end_chunk, input_file_path, input_file, SPLIT_DIMENSION)
+                    )
 
             with Pool(processes=os.cpu_count()) as pool:
                 pool.starmap(split_file_chunk, tasks)
@@ -258,3 +273,5 @@ def split_file(start_index, end_index, input_path, split_dimension):
 
 # todo: spawn a processing node to do the splitting
 # do this for only iem dataset
+
+# todo: remove the replicated inputs
