@@ -170,7 +170,7 @@ class BatchNewSplitCommand(BaseCommand):
         print("Dimension size:", DIMENSION_SIZE)
 
         print("Cleaning up the existing directories")
-        pattern = re.compile(r"^exp_batch_\d+$")
+        pattern = re.compile(r"^batch_\d+$")
         output_dir = Path(self.output_dir)
         to_be_removed = [
             d for d in output_dir.iterdir() if d.is_dir() and pattern.match(d.name)
@@ -182,7 +182,7 @@ class BatchNewSplitCommand(BaseCommand):
         print("Set up batch directories")
         os.makedirs(self.output_dir, exist_ok=True)
         for index in range(DIMENSION_SIZE):
-            path = os.path.join(self.output_dir, f"exp_batch_{index}")
+            path = os.path.join(self.output_dir, f"batch_{index}")
             BATCH_DIRS.append(path)
 
             path = os.path.join(path, "input")
@@ -195,7 +195,6 @@ class BatchNewSplitCommand(BaseCommand):
         if use_parallel:
             tasks = []
             sliced_dirs = os.listdir(self._args.input_path)
-            # chunk_size = self._get_chunk_size(sliced_dirs[0])
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
                 chunks = self.create_chunks(DIMENSION_SIZE, os.cpu_count())
