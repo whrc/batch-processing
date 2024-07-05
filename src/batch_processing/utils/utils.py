@@ -20,6 +20,40 @@ from rich.progress import (
 )
 
 
+INPUT_FILES = [
+    "co2.nc",
+    "projected-co2.nc",
+    "drainage.nc",
+    "fri-fire.nc",
+    "run-mask.nc",
+    "soil-texture.nc",
+    "topo.nc",
+    "vegetation.nc",
+    "historic-explicit-fire.nc",
+    "projected-explicit-fire.nc",
+    "projected-climate.nc",
+    "historic-climate.nc",
+]
+
+IO_PATHS = {
+    "parameter_dir": "parameters/",
+    "output_dir": "output/",
+    "output_spec_file": "config/output_spec.csv",
+    "runmask_file": "input/run-mask.nc",
+    "hist_climate_file": "input/historic-climate.nc",
+    "proj_climate_file": "input/projected-climate.nc",
+    "veg_class_file": "input/vegetation.nc",
+    "drainage_file": "input/drainage.nc",
+    "soil_texture_file": "input/soil-texture.nc",
+    "co2_file": "input/co2.nc",
+    "proj_co2_file": "input/projected-co2.nc",
+    "topo_file": "input/topo.nc",
+    "fri_fire_file": "input/fri-fire.nc",
+    "hist_exp_fire_file": "input/historic-explicit-fire.nc",
+    "proj_exp_fire_file": "input/projected-explicit-fire.nc",
+}
+
+
 def run_command(command: list) -> None:
     """Executes a shell command."""
     subprocess.run(command, check=True)
@@ -279,10 +313,12 @@ def get_progress_bar():
 
 
 def get_project_root() -> Path:
+    """Returns the project root."""
     return Path(__file__).parent.parent.parent.parent
 
 
 def interpret_path(path: str) -> str:
+    """Converts any given relative path to an absolute path."""
     path = os.path.expanduser(path)
 
     return os.path.abspath(path)

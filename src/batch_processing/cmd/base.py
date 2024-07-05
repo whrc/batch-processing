@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 
 class BaseCommand(ABC):
@@ -7,7 +8,7 @@ class BaseCommand(ABC):
         self.user = os.getenv("USER")
         self.home_dir = os.getenv("HOME")
 
-        self.dvmdostem_path = f"{self.home_dir}/dvm-dos-tem"
+        self.dvmdostem_path = Path(f"{self.home_dir}/dvm-dos-tem")
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
 
         # You might notice that the only variable which has a trailing
