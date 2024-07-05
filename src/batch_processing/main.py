@@ -11,6 +11,7 @@ from batch_processing.cmd.init import InitCommand
 from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
 from batch_processing.cmd.run_check import RunCheckCommand
+from batch_processing.cmd.extract_cell import ExtractCellCommand
 
 
 def main():
@@ -221,6 +222,33 @@ def main():
 
     parser_run_check = subparsers.add_parser("run_check", help="todo")
     parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
+
+    parser_extract = subparsers.add_parser("extract_cell", help="Extracts a single cell and creates a batch")
+    parser_extract.add_argument(
+        "-i",
+        "--input-path",
+        required=True,
+        help="Path to the input folder"
+    )
+    parser_extract.add_argument(
+        "-o",
+        "--output-path",
+        required=True,
+        help="Path to the output folder"
+    )
+    parser_extract.add_argument(
+        "-X",
+        type=int,
+        required=True,
+        help="The row to extract"
+    )
+    parser_extract.add_argument(
+        "-Y",
+        type=int,
+        required=True,
+        help="The column to extract"
+    )
+    parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
 
     args = parser.parse_args()
 

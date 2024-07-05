@@ -280,3 +280,9 @@ def get_progress_bar():
 
 def get_project_root() -> Path:
     return Path(__file__).parent.parent.parent.parent
+
+
+def interpret_path(path: str) -> str:
+    path = os.path.expanduser(path)
+
+    return os.path.abspath(path)

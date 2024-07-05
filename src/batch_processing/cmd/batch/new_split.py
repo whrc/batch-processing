@@ -197,7 +197,8 @@ class BatchNewSplitCommand(BaseCommand):
             sliced_dirs = os.listdir(self._args.input_path)
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
-                chunks = self.create_chunks(DIMENSION_SIZE, os.cpu_count())
+                # todo: change this hard-coded value
+                chunks = self.create_chunks(185, os.cpu_count())
                 input_file_path = os.path.join(
                     self._args.input_path, sliced_dir, input_file
                 )
