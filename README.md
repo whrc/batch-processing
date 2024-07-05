@@ -71,7 +71,6 @@ Example usage:
 4) Submit the batches to Slurm: `bp batch run`
 
 5) Start monitoring to recover the preempted machines: `bp monitor`
-[Read more about why this is necessary](todo)
 
 6) (**Optional**) Measure the elapsed time to run the simulation: `bp elapsed`
 
