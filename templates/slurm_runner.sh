@@ -1,10 +1,10 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="ddt-batch-$index"
+#SBATCH --job-name="$job_name"
 
 #SBATCH -p $partition
 
-#SBATCH -o /mnt/exacloud/$user/slurm-logs/batch-$index.out
+#SBATCH -o /mnt/exacloud/$user/slurm-logs/$job_name.out
 
 #SBATCH -N 1
 

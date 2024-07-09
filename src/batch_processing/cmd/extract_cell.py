@@ -6,7 +6,7 @@ from string import Template
 import netCDF4
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import interpret_path, get_project_root, clean_and_load_json, INPUT_FILES, IO_PATHS
+from batch_processing.utils.utils import interpret_path, get_project_root, clean_and_load_json, generate_random_string, INPUT_FILES, IO_PATHS
 
 
 class ExtractCellCommand(BaseCommand):
@@ -61,10 +61,9 @@ class ExtractCellCommand(BaseCommand):
         with open(get_project_root() / "templates" / "slurm_runner.sh") as file:
             template = Template(file.read())
 
-        # todo: update the template
         slurm_runner = template.substitute(
             {
-                "index": 99,
+                "job_name": generate_random_string(),
                 "partition": self._args.slurm_partition,
                 "user": self.user,
                 "dvmdostem_binary": self.dvmdostem_bin_path,

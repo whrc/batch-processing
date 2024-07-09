@@ -85,7 +85,7 @@ class BatchNewSplitCommand(BaseCommand):
 
         slurm_runner = template.substitute(
             {
-                "index": index,
+                "job_name": f"batch-{index}",
                 "partition": self._args.slurm_partition,
                 "user": self.user,
                 "dvmdostem_binary": self.dvmdostem_bin_path,

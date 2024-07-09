@@ -4,6 +4,8 @@ import os
 import re
 import subprocess
 from pathlib import Path
+import random
+import string
 from typing import Union
 
 import cftime
@@ -312,9 +314,11 @@ def get_progress_bar():
     )
 
 
+# todo: gotta change this function
 def get_project_root() -> Path:
     """Returns the project root."""
-    return Path(__file__).parent.parent.parent.parent
+    # return Path(__file__).parent.parent.parent.parent
+    return Path("/opt/batch-processing")
 
 
 def interpret_path(path: str) -> str:
@@ -322,3 +326,7 @@ def interpret_path(path: str) -> str:
     path = os.path.expanduser(path)
 
     return os.path.abspath(path)
+
+
+def generate_random_string(N=5):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=N))
