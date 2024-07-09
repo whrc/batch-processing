@@ -6,7 +6,7 @@ from string import Template
 import netCDF4
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import interpret_path, get_project_root, INPUT_FILES, IO_PATHS
+from batch_processing.utils.utils import interpret_path, get_project_root, clean_and_load_json, INPUT_FILES, IO_PATHS
 
 
 class ExtractCellCommand(BaseCommand):
@@ -65,16 +65,16 @@ class ExtractCellCommand(BaseCommand):
         slurm_runner = template.substitute(
             {
                 "index": 99,
-                "partition": "spot",
+                "partition": self._args.slurm_partition,
                 "user": self.user,
                 "dvmdostem_binary": self.dvmdostem_bin_path,
-                "log_level": "disabled",
+                "log_level": self._args.log_level,
                 "config_path": Path(self._args.output_path / "config" / "config.js"),
-                "p": 10,
-                "e": 10,
-                "s": 10,
-                "t": 10,
-                "n": 10,
+                "p": self._args.p,
+                "e": self._args.e,
+                "s": self._args.s,
+                "t": self._args.t,
+                "n": self._args.n,
             }
         )
 
@@ -84,8 +84,9 @@ class ExtractCellCommand(BaseCommand):
     def _configure(self):
         config_file_path = Path(self._args.output_path / "config" / "config.js")
         with open(config_file_path) as f:
-            config_data = json.load(f)
+            config_data_str = f.read()
 
+        config_data = clean_and_load_json(config_data_str)
         for key, val in IO_PATHS.items():
             config_data["IO"][key] = f"{self._args.output_path}/{val}"
 
@@ -95,7 +96,7 @@ class ExtractCellCommand(BaseCommand):
     def execute(self):
         if not self.dvmdostem_path.exists():
             raise Exception(
-                "dvm-dos-tem folder needs to be exist in the home folder. "
+                "dvm-dos-tem folder needs to exist in the home folder. "
                 f"Couldn't found in {self.dvmdostem_path}"
             )
 

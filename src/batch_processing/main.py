@@ -248,6 +248,35 @@ def main():
         required=True,
         help="The column to extract"
     )
+    parser_extract.add_argument(
+        "-sp",
+        "--slurm-partition",
+        choices=["spot", "compute"],
+        default="spot",
+        help="Specificy the Slurm partition. By default, spot",
+    )
+    parser_extract.add_argument(
+        "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
+    )
+    parser_extract.add_argument(
+        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run. By default, 0"
+    )
+    parser_extract.add_argument(
+        "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
+    )
+    parser_extract.add_argument(
+        "-t", type=int, default=0, help="Number of TRANSIENT years to run. By default, 0"
+    )
+    parser_extract.add_argument(
+        "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
+    )
+    parser_extract.add_argument(
+        "-l",
+        "--log-level",
+        choices=["debug", "info", "note", "warn", "err", "fatal", "disabled"],
+        default="disabled",
+        help="Sets the log level. By default, disabled",
+    )
     parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
 
     args = parser.parse_args()
