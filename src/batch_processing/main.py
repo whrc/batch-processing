@@ -12,6 +12,7 @@ from batch_processing.cmd.input import InputCommand
 from batch_processing.cmd.monitor import MonitorCommand
 from batch_processing.cmd.run_check import RunCheckCommand
 from batch_processing.cmd.extract_cell import ExtractCellCommand
+from batch_processing.cmd.diff import DiffCommand
 
 
 def main():
@@ -278,6 +279,13 @@ def main():
         help="Sets the log level. By default, disabled",
     )
     parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
+
+    parser_diff = subparsers.add_parser("diff", help="Compares the NetCDF files in the given directories. "
+                                        "The given two directories must contain the same files.")
+
+    parser_diff.add_argument("path_one")
+    parser_diff.add_argument("path_two")
+    parser_diff.set_defaults(func=lambda args: DiffCommand(args).execute())
 
     args = parser.parse_args()
 
