@@ -22,6 +22,9 @@ dynamic = ["dependencies"]
 [project.urls]
 Homepage = "https://github.com/whrc/batch-processing"
 
+[tool.setuptools.package-data]
+"batch_processing" = ["templates/**/*"]
+
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
