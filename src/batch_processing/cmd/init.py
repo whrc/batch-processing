@@ -5,6 +5,7 @@ from rich import print
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import download_directory, download_file, run_command
 
+# todo: create output dir
 
 class InitCommand(BaseCommand):
     def __init__(self, args):
@@ -66,7 +67,9 @@ class InitCommand(BaseCommand):
             f"{self.exacloud_user_dir}[/bold green]"
         )
 
-        Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
+        self.slurm_log_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(exist_ok=True)
+
         print(
             f"[bold blue]slurm-logs directory is created under {self.exacloud_user_dir}[/bold blue]"
         )

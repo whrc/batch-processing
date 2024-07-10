@@ -9,7 +9,7 @@ class BaseCommand(ABC):
         self.home_dir = os.getenv("HOME")
 
         self.dvmdostem_path = Path(f"{self.home_dir}/dvm-dos-tem")
-        self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
+        self.dvmdostem_bin_path = self.dvmdostem_path / "dvmdostem"
 
         # You might notice that the only variable which has a trailing
         # slash is in the below one. config.js file has it this way.
@@ -20,9 +20,9 @@ class BaseCommand(ABC):
         self.config_path = f"{self.dvmdostem_path}/config/config.js"
         self.output_spec_path = f"{self.dvmdostem_path}/config/output_spec.csv"
 
-        self.exacloud_user_dir = f"/mnt/exacloud/{self.user}"
-        self.output_dir = f"{self.exacloud_user_dir}/output"
-        self.slurm_log_dir = f"{self.exacloud_user_dir}/slurm-logs"
+        self.exacloud_user_dir = Path(f"/mnt/exacloud/{self.user}")
+        self.output_dir = self.exacloud_user_dir / "output"
+        self.slurm_log_dir = self.exacloud_user_dir / "slurm-logs"
 
         self.batch_dir = f"{self.output_dir}/batch-run"
         self.result_dir = f"{self.exacloud_user_dir}/all-merged"
