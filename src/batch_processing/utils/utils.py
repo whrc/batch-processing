@@ -314,11 +314,9 @@ def get_progress_bar():
     )
 
 
-# todo: gotta change this function
 def get_project_root() -> Path:
     """Returns the project root."""
-    # return Path(__file__).parent.parent.parent.parent
-    return Path("/opt/batch-processing")
+    return Path(__file__).parent.parent
 
 
 def interpret_path(path: str) -> str:
