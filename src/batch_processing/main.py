@@ -13,6 +13,7 @@ from batch_processing.cmd.monitor import MonitorCommand
 from batch_processing.cmd.run_check import RunCheckCommand
 from batch_processing.cmd.extract_cell import ExtractCellCommand
 from batch_processing.cmd.diff import DiffCommand
+from batch_processing.cmd.batch.new_merge import BatchNewMergeCommand
 
 
 def main():
@@ -167,6 +168,12 @@ def main():
         "new_run", help="Submit the batches to the Slurm queue"
     )
     parser_batch_new_run.set_defaults(func=lambda args: BatchNewRunCommand(args).execute())
+
+    parser_batch_new_merge = batch_subparsers.add_parser(
+        "new_merge", help="Merge the completed batches"
+    )
+
+    parser_batch_new_merge.set_defaults(func=lambda args: BatchNewMergeCommand(args).execute())
 
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
