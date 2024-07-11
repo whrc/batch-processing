@@ -66,6 +66,7 @@ class InitCommand(BaseCommand):
             f"{self.exacloud_user_dir}[/bold green]"
         )
 
+        Path(f"{self.output_dir}").mkdir(exist_ok=True)
         Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
         print(
             f"[bold blue]slurm-logs directory is created under {self.exacloud_user_dir}[/bold blue]"
