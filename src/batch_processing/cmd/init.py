@@ -39,7 +39,8 @@ class InitCommand(BaseCommand):
 
         # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
-        run_command(["chmod", "+x", self.dvmdostem_bin_path])
+        run_command(["chmod", "+x", f"{self.dvmdostem_scripts_path}/*"])
+        run_command(["chmod", "+x", ])
 
         download_file(
             "gcp-slurm",
