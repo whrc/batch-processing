@@ -38,14 +38,35 @@ class BatchNewMergeCommand(BaseCommand):
                 if any(map(file_as_str.__contains__, ["restart", "run_status"])):
                     shutil.copy(file, temp_file)
                 else:
-                    # rename the dimensions
-                    pass
+                    subprocess.run([
+                        "ncrename",
+                        "-O",
+                        "-h",
+                        "-d",
+                        "x,X",
+                        "-d",
+                        "y,Y",
+                        file_as_str,
+                        temp_file,
+                    ])
 
                 new_files.append(temp_file)
 
             grouped_files[file_name] = new_files
 
-        #todo: make sure the files are sorted by their batch number
+        for file_name in grouped_files:
+            all_files = grouped_files[file_name]
+            for file in all_files:
+                subprocess.run([
+                    "ncks",
+                    "-O",
+                    "-h",
+                    "--mk_rec_dmn",
+                    "Y",
+                    file,
+                    file,
+                ])
+
         print("ncap2")
         for file_name in grouped_files:
             all_files = grouped_files[file_name]
@@ -55,9 +76,9 @@ class BatchNewMergeCommand(BaseCommand):
                     'ncap2',
                     '-O',
                     '-h',
-                    f"-s'Y[$Y]='{index}'; X[$X]=array(0, 1, $X);'",
+                    f"-s'Y[$Y]={index}; X[$X]=array(0, 1, $X);'",
                     file,
-                    file
+                    file,
                 ])
 
         print("concatenating the files")
@@ -65,8 +86,10 @@ class BatchNewMergeCommand(BaseCommand):
             all_files = grouped_files[file_name]
             subprocess.run([
                 "ncrcat",
-                " ".join([file.as_posix() for file in all_files]),
-                f"merged_{file_name}"
+                "-O",
+                "-h",
+                *all_files,
+                f"merged_{file_name}",
             ])
 
 
