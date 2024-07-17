@@ -14,10 +14,10 @@ class BatchNewRunCommand(BaseCommand):
         self.output_dir = Path(self.output_dir)
 
     def execute(self):
-        full_paths = self.output_dir.glob("*/slurm_runner.sh")
+        full_paths = list(self.output_dir.glob("*/slurm_runner.sh"))
 
         for path in track(
-            (p for p in full_paths), 
+            full_paths, 
             description="Submitting batches",
             total=len(full_paths)
         ):

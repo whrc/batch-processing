@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 from rich import print
 
@@ -39,8 +40,7 @@ class InitCommand(BaseCommand):
 
         # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
-        run_command(["chmod", "+x", f"{self.dvmdostem_scripts_path}/*"])
-        run_command(["chmod", "+x", ])
+        subprocess.run(f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True)
 
         download_file(
             "gcp-slurm",
