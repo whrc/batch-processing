@@ -12,6 +12,7 @@ class BatchNewMergeCommand(BaseCommand):
         super().__init__()
         self._args = args
         self.output_dir = Path(self.output_dir)
+        self.result_dir = Path(self.result_dir)
 
     def execute(self):
         batch_output_dirs = self.output_dir.glob("*/output")
@@ -72,15 +73,21 @@ class BatchNewMergeCommand(BaseCommand):
             all_files = grouped_files[file_name]
             for index, file in enumerate(all_files):
                 print(file)
-                subprocess.run([
-                    'ncap2',
-                    '-O',
-                    '-h',
-                    f"-s'Y[$Y]={index}; X[$X]=array(0, 1, $X);'",
-                    file,
-                    file,
-                ])
+                try:
+                    completed_process = subprocess.run([
+                        'ncap2',
+                        '-O',
+                        '-h',
+                        '-s', f'Y[$Y]={index}; X[$X]=array(0, 1, $X);',
+                        file.as_posix(),
+                        file.as_posix(),
+                    ], check=True, capture_output=True, text=True)
+                except subprocess.CalledProcessError as e:
+                    print(f"Error occurred: {e}")
+                    print(f"Output: {e.stdout}")
+                    print(f"Error output: {e.stderr}")
 
+        self.result_dir.mkdir(exist_ok=True)
         print("concatenating the files")
         for file_name in grouped_files:
             all_files = grouped_files[file_name]
@@ -89,7 +96,7 @@ class BatchNewMergeCommand(BaseCommand):
                 "-O",
                 "-h",
                 *all_files,
-                f"merged_{file_name}",
+                self.result_dir / file_name,
             ])
 
 
