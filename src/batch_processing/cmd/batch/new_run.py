@@ -17,13 +17,12 @@ class BatchNewRunCommand(BaseCommand):
         full_paths = list(self.output_dir.glob("*/slurm_runner.sh"))
 
         for path in track(
-            full_paths, 
-            description="Submitting batches",
-            total=len(full_paths)
+            full_paths, description="Submitting batches", total=len(full_paths)
         ):
-            subprocess.run([
-                "sbatch",
-                path.as_posix(),
-            ])
+            subprocess.run(
+                ["sbatch", path.as_posix()],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
         ElapsedCommand(self._args).execute()
