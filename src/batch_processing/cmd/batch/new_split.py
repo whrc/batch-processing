@@ -14,24 +14,12 @@ import netCDF4
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     get_project_root,
+    INPUT_FILES,
+    IO_PATHS,
 )
 
 BATCH_DIRS = []
 BATCH_INPUT_DIRS = []
-INPUT_FILES = [
-    "co2.nc",
-    "projected-co2.nc",
-    "drainage.nc",
-    "fri-fire.nc",
-    "run-mask.nc",
-    "soil-texture.nc",
-    "topo.nc",
-    "vegetation.nc",
-    "historic-explicit-fire.nc",
-    "projected-explicit-fire.nc",
-    "projected-climate.nc",
-    "historic-climate.nc",
-]
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
 
 
@@ -39,6 +27,7 @@ class BatchNewSplitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
+        self.output_dir = Path(self.output_dir)
 
     def _run_utils(self, batch_dir, batch_input_dir):
         subprocess.run(
@@ -56,25 +45,7 @@ class BatchNewSplitCommand(BaseCommand):
         with open(config_file) as f:
             config_data = json.load(f)
 
-        io_paths = {
-            "parameter_dir": "parameters/",
-            "output_dir": "output/",
-            "output_spec_file": "config/output_spec.csv",
-            "runmask_file": "input/run-mask.nc",
-            "hist_climate_file": "input/historic-climate.nc",
-            "proj_climate_file": "input/projected-climate.nc",
-            "veg_class_file": "input/vegetation.nc",
-            "drainage_file": "input/drainage.nc",
-            "soil_texture_file": "input/soil-texture.nc",
-            "co2_file": "input/co2.nc",
-            "proj_co2_file": "input/projected-co2.nc",
-            "topo_file": "input/topo.nc",
-            "fri_fire_file": "input/fri-fire.nc",
-            "hist_exp_fire_file": "input/historic-explicit-fire.nc",
-            "proj_exp_fire_file": "input/projected-explicit-fire.nc",
-        }
-
-        for key, val in io_paths.items():
+        for key, val in IO_PATHS.items():
             config_data["IO"][key] = f"{batch_dir}/{val}"
 
         with open(config_file, "w") as f:
@@ -171,18 +142,17 @@ class BatchNewSplitCommand(BaseCommand):
 
         print("Cleaning up the existing directories")
         pattern = re.compile(r"^batch_\d+$")
-        output_dir = Path(self.output_dir)
         to_be_removed = [
-            d for d in output_dir.iterdir() if d.is_dir() and pattern.match(d.name)
+            d for d in self.output_dir.iterdir() if d.is_dir() and pattern.match(d.name)
         ]
 
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda elem: shutil.rmtree(elem), to_be_removed)
 
         print("Set up batch directories")
-        os.makedirs(self.output_dir, exist_ok=True)
+        self.output_dir.mkdir(exist_ok=True)
         for index in range(DIMENSION_SIZE):
-            path = os.path.join(self.output_dir, f"batch_{index}")
+            path = self.output_dir / f"batch_{index}"
             BATCH_DIRS.append(path)
 
             path = os.path.join(path, "input")
@@ -221,6 +191,15 @@ class BatchNewSplitCommand(BaseCommand):
         print("Configure each batch")
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda args: self._configure(*args), enumerate(BATCH_DIRS))
+
+        # we have to do this otherwise there would be two inputs folders:
+        # input/ and inputs/
+        #
+        # inputs/ folder is created because we are calling setup_working_directory.py
+        print("Delete duplicated inputs files")
+        duplicated_input_paths = self.output_dir.glob("*/inputs")
+        with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+            executor.map(lambda elem: shutil.rmtree(elem), duplicated_input_paths)
 
 
 def split_file_chunk(start_index, end_index, input_path, input_file, split_dimension):
@@ -273,5 +252,3 @@ def split_file(start_index, end_index, input_path, split_dimension):
 
 # todo: spawn a processing node to do the splitting
 # do this for only iem dataset
-
-# todo: remove the replicated inputs
