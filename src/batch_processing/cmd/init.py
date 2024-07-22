@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 from rich import print
 
@@ -39,7 +40,8 @@ class InitCommand(BaseCommand):
 
         # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
-        run_command(["chmod", "+x", self.dvmdostem_bin_path])
+        subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
+        subprocess.run(f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True)
 
         download_file(
             "gcp-slurm",
@@ -66,6 +68,7 @@ class InitCommand(BaseCommand):
             f"{self.exacloud_user_dir}[/bold green]"
         )
 
+        Path(f"{self.output_dir}").mkdir(exist_ok=True)
         Path(f"{self.slurm_log_dir}").mkdir(exist_ok=True)
         print(
             f"[bold blue]slurm-logs directory is created under {self.exacloud_user_dir}[/bold blue]"

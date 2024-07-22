@@ -10,6 +10,7 @@ class BaseCommand(ABC):
 
         self.dvmdostem_path = Path(f"{self.home_dir}/dvm-dos-tem")
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
+        self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/util"
 
         # You might notice that the only variable which has a trailing
         # slash is in the below one. config.js file has it this way.

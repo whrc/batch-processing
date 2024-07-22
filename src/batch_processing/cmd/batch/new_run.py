@@ -1,5 +1,5 @@
-import os
 import subprocess
+from pathlib import Path
 
 from rich.progress import track
 
@@ -11,18 +11,19 @@ class BatchNewRunCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
+        self.output_dir = Path(self.output_dir)
 
     def execute(self):
-        full_paths = [
-            os.path.join(self.output_dir, item) for item in os.listdir(self.output_dir)
-        ]
-        # -1 is for removing batch-run/ dir
-        total_batches = sum(1 for path in full_paths if os.path.isdir(path)) - 1
+        full_paths = list(self.output_dir.glob("*/slurm_runner.sh"))
 
-        for index in track(
-            range(total_batches), description="Submitting batches", total=total_batches
+        for path in track(
+            full_paths, 
+            description="Submitting batches",
+            total=len(full_paths)
         ):
-            slurm_script_path = f"{self.output_dir}/batch_{index}/slurm_runner.sh"
-            subprocess.check_output(["sbatch", slurm_script_path])
+            subprocess.run([
+                "sbatch",
+                path.as_posix(),
+            ])
 
         ElapsedCommand(self._args).execute()
