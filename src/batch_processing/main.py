@@ -1,19 +1,39 @@
 import argparse
 import textwrap
 
-from batch_processing.cmd.batch.merge import BatchMergeCommand
-from batch_processing.cmd.batch.new_split import BatchNewSplitCommand
-from batch_processing.cmd.batch.new_run import BatchNewRunCommand
-from batch_processing.cmd.batch.postprocess import BatchPostprocessCommand
-from batch_processing.cmd.batch.run import BatchRunCommand
-from batch_processing.cmd.batch.split import BatchSplitCommand
-from batch_processing.cmd.init import InitCommand
-from batch_processing.cmd.input import InputCommand
-from batch_processing.cmd.monitor import MonitorCommand
-from batch_processing.cmd.run_check import RunCheckCommand
-from batch_processing.cmd.extract_cell import ExtractCellCommand
-from batch_processing.cmd.diff import DiffCommand
-from batch_processing.cmd.batch.new_merge import BatchNewMergeCommand
+import lazy_import
+
+BatchMergeCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.merge.BatchMergeCommand"
+)
+BatchNewSplitCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.new_split.BatchNewSplitCommand"
+)
+BatchNewRunCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.new_run.BatchNewRunCommand"
+)
+BatchPostprocessCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
+)
+BatchRunCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.run.BatchRunCommand"
+)
+BatchSplitCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.split.BatchSplitCommand"
+)
+InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
+InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
+MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
+RunCheckCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.run_check.RunCheckCommand"
+)
+ExtractCellCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.extract_cell.ExtractCellCommand"
+)
+DiffCommand = lazy_import.lazy_class("batch_processing.cmd.diff.DiffCommand")
+BatchNewMergeCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.new_merge.BatchNewMergeCommand"
+)
 
 
 def main():
@@ -167,13 +187,17 @@ def main():
     parser_batch_new_run = batch_subparsers.add_parser(
         "new_run", help="Submit the batches to the Slurm queue"
     )
-    parser_batch_new_run.set_defaults(func=lambda args: BatchNewRunCommand(args).execute())
+    parser_batch_new_run.set_defaults(
+        func=lambda args: BatchNewRunCommand(args).execute()
+    )
 
     parser_batch_new_merge = batch_subparsers.add_parser(
         "new_merge", help="Merge the completed batches"
     )
 
-    parser_batch_new_merge.set_defaults(func=lambda args: BatchNewMergeCommand(args).execute())
+    parser_batch_new_merge.set_defaults(
+        func=lambda args: BatchNewMergeCommand(args).execute()
+    )
 
     parser_batch_merge = batch_subparsers.add_parser(
         "merge", help="Merge the completed batches"
@@ -231,30 +255,20 @@ def main():
     parser_run_check = subparsers.add_parser("run_check", help="todo")
     parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
 
-    parser_extract = subparsers.add_parser("extract_cell", help="Extracts a single cell and creates a batch")
-    parser_extract.add_argument(
-        "-i",
-        "--input-path",
-        required=True,
-        help="Path to the input folder"
+    parser_extract = subparsers.add_parser(
+        "extract_cell", help="Extracts a single cell and creates a batch"
     )
     parser_extract.add_argument(
-        "-o",
-        "--output-path",
-        required=True,
-        help="Path to the output folder"
+        "-i", "--input-path", required=True, help="Path to the input folder"
     )
     parser_extract.add_argument(
-        "-X",
-        type=int,
-        required=True,
-        help="The row to extract"
+        "-o", "--output-path", required=True, help="Path to the output folder"
     )
     parser_extract.add_argument(
-        "-Y",
-        type=int,
-        required=True,
-        help="The column to extract"
+        "-X", type=int, required=True, help="The row to extract"
+    )
+    parser_extract.add_argument(
+        "-Y", type=int, required=True, help="The column to extract"
     )
     parser_extract.add_argument(
         "-sp",
@@ -267,13 +281,19 @@ def main():
         "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
     )
     parser_extract.add_argument(
-        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run. By default, 0"
+        "-e",
+        type=int,
+        default=0,
+        help="Number of EQUILIBRIUM years to run. By default, 0",
     )
     parser_extract.add_argument(
         "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
     )
     parser_extract.add_argument(
-        "-t", type=int, default=0, help="Number of TRANSIENT years to run. By default, 0"
+        "-t",
+        type=int,
+        default=0,
+        help="Number of TRANSIENT years to run. By default, 0",
     )
     parser_extract.add_argument(
         "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
@@ -287,8 +307,11 @@ def main():
     )
     parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
 
-    parser_diff = subparsers.add_parser("diff", help="Compares the NetCDF files in the given directories. "
-                                        "The given two directories must contain the same files.")
+    parser_diff = subparsers.add_parser(
+        "diff",
+        help="Compares the NetCDF files in the given directories. "
+        "The given two directories must contain the same files.",
+    )
 
     parser_diff.add_argument("path_one")
     parser_diff.add_argument("path_two")
