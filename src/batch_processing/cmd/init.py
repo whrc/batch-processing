@@ -40,6 +40,7 @@ class InitCommand(BaseCommand):
 
         # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
+        subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
         subprocess.run(f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True)
 
         download_file(
