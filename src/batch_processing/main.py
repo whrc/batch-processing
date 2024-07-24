@@ -3,7 +3,6 @@ import textwrap
 
 import lazy_import
 
-
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
 MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
@@ -42,13 +41,19 @@ def add_common_dvmdostem_arguments(parser: argparse.ArgumentParser) -> None:
         "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
     )
     parser.add_argument(
-        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run. By default, 0"
+        "-e",
+        type=int,
+        default=0,
+        help="Number of EQUILIBRIUM years to run. By default, 0",
     )
     parser.add_argument(
         "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
     )
     parser.add_argument(
-        "-t", type=int, default=0, help="Number of TRANSIENT years to run. By default, 0"
+        "-t",
+        type=int,
+        default=0,
+        help="Number of TRANSIENT years to run. By default, 0",
     )
     parser.add_argument(
         "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
@@ -99,8 +104,7 @@ def main():
     )
 
     parser_batch_split = batch_subparsers.add_parser(
-        "split",
-        help="Split the given input data into smaller batches"
+        "split", help="Split the given input data into smaller batches"
     )
 
     parser_batch_split.add_argument(
@@ -116,30 +120,23 @@ def main():
         required=True,
         help=(
             "Path to the directory that contains the input files. "
-            "Example: /mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50"
+            "Example: ",
+            "/mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50"
         ),
     )
 
     add_common_dvmdostem_arguments(parser_batch_split)
 
-    parser_batch_split.set_defaults(
-        func=lambda args: BatchSplitCommand(args).execute()
-    )
+    parser_batch_split.set_defaults(func=lambda args: BatchSplitCommand(args).execute())
 
     parser_batch_run = batch_subparsers.add_parser(
         "run", help="Submit the batches to the Slurm queue"
     )
-    parser_batch_run.set_defaults(
-        func=lambda args: BatchRunCommand(args).execute()
-    )
+    parser_batch_run.set_defaults(func=lambda args: BatchRunCommand(args).execute())
 
-    parser_batch_merge = batch_subparsers.add_parser(
-        "merge", help="Merge the batches"
-    )
+    parser_batch_merge = batch_subparsers.add_parser("merge", help="Merge the batches")
 
-    parser_batch_merge.set_defaults(
-        func=lambda args: BatchMergeCommand(args).execute()
-    )
+    parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
     parser_batch_postprocess = batch_subparsers.add_parser(
         "postprocess",
@@ -180,12 +177,16 @@ def main():
 
     add_common_dvmdostem_arguments(parser_batch_legacy_split)
 
-    parser_batch_legacy_split.set_defaults(func=lambda args: BatchLegacySplitCommand(args).execute())
+    parser_batch_legacy_split.set_defaults(
+        func=lambda args: BatchLegacySplitCommand(args).execute()
+    )
 
     parser_batch_legacy_run = batch_subparsers.add_parser(
         "legacy_run", help="Submit the batches to the Slurm queue"
     )
-    parser_batch_legacy_run.set_defaults(func=lambda args: BatchLegacyRunCommand(args).execute())
+    parser_batch_legacy_run.set_defaults(
+        func=lambda args: BatchLegacyRunCommand(args).execute()
+    )
 
     parser_batch_legacy_merge = batch_subparsers.add_parser(
         "legacy_merge", help="Merge the completed batches"
@@ -199,7 +200,9 @@ def main():
         action="store_true",
         help="Continue merging even if not all cells ran successfully.",
     )
-    parser_batch_legacy_merge.set_defaults(func=lambda args: BatchLegacyMergeCommand(args).execute())
+    parser_batch_legacy_merge.set_defaults(
+        func=lambda args: BatchLegacyMergeCommand(args).execute()
+    )
 
     parser_monitoring = subparsers.add_parser(
         "monitor",
