@@ -4,15 +4,8 @@ import textwrap
 import lazy_import
 
 
-BatchNewSplitCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.new_split.BatchNewSplitCommand"
-)
-BatchNewRunCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.new_run.BatchNewRunCommand"
-)
-BatchPostprocessCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
-)
+# todo: move common dvmdostem args to a function
+
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
 MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
@@ -23,8 +16,17 @@ ExtractCellCommand = lazy_import.lazy_class(
     "batch_processing.cmd.extract_cell.ExtractCellCommand"
 )
 DiffCommand = lazy_import.lazy_class("batch_processing.cmd.diff.DiffCommand")
-BatchNewMergeCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.new_merge.BatchNewMergeCommand"
+BatchSplitCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.split.BatchSplitCommand"
+)
+BatchRunCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.run.BatchRunCommand"
+)
+BatchMergeCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.merge.BatchMergeCommand"
+)
+BatchPostprocessCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
 )
 BatchLegacySplitCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.legacy_split.BatchLegacySplitCommand"
@@ -92,18 +94,16 @@ def main():
         func=lambda args: BatchPostprocessCommand(args).execute()
     )
 
-    parser_batch_new_split = batch_subparsers.add_parser(
-        "new_split",
-    )
+    parser_batch_split = batch_subparsers.add_parser("split")
 
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-sp",
         "--slurm-partition",
         choices=["spot", "compute"],
         default="spot",
         help="Specificy the Slurm partition. By default, spot",
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-i",
         "--input-path",
         required=True,
@@ -112,22 +112,22 @@ def main():
             "Example: $HOME/input/four-basins"
         ),
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-p", type=int, default=0, help="Number of PRE RUN years to run"
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run"
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-s", type=int, default=0, help="Number of SPINUP years to run"
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-t", type=int, default=0, help="Number of TRANSIENT years to run"
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-n", type=int, default=0, help="Number of SCENARIO years to run"
     )
-    parser_batch_new_split.add_argument(
+    parser_batch_split.add_argument(
         "-l",
         "--log-level",
         choices=["debug", "info", "note", "warn", "err", "fatal"],
@@ -135,8 +135,23 @@ def main():
         help="Sets the log level",
     )
 
-    parser_batch_new_split.set_defaults(
-        func=lambda args: BatchNewSplitCommand(args).execute()
+    parser_batch_split.set_defaults(
+        func=lambda args: BatchSplitCommand(args).execute()
+    )
+
+    parser_batch_run = batch_subparsers.add_parser(
+        "run", help="Submit the batches to the Slurm queue"
+    )
+    parser_batch_run.set_defaults(
+        func=lambda args: BatchRunCommand(args).execute()
+    )
+
+    parser_batch_merge = batch_subparsers.add_parser(
+        "merge", help="Merge the completed batches"
+    )
+
+    parser_batch_merge.set_defaults(
+        func=lambda args: BatchMergeCommand(args).execute()
     )
 
     parser_batch_legacy_split = batch_subparsers.add_parser(
@@ -198,21 +213,6 @@ def main():
         help="Continue merging even if not all cells ran successfully.",
     )
     parser_batch_legacy_merge.set_defaults(func=lambda args: BatchLegacyMergeCommand(args).execute())
-
-    parser_batch_new_run = batch_subparsers.add_parser(
-        "new_run", help="Submit the batches to the Slurm queue"
-    )
-    parser_batch_new_run.set_defaults(
-        func=lambda args: BatchNewRunCommand(args).execute()
-    )
-
-    parser_batch_new_merge = batch_subparsers.add_parser(
-        "new_merge", help="Merge the completed batches"
-    )
-
-    parser_batch_new_merge.set_defaults(
-        func=lambda args: BatchNewMergeCommand(args).execute()
-    )
 
     parser_monitoring = subparsers.add_parser(
         "monitor",

@@ -23,7 +23,7 @@ BATCH_INPUT_DIRS = []
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
 
 
-class BatchNewSplitCommand(BaseCommand):
+class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args

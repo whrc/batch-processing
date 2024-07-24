@@ -7,7 +7,7 @@ import re
 from batch_processing.cmd.base import BaseCommand
 
 
-class BatchNewMergeCommand(BaseCommand):
+class BatchMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args

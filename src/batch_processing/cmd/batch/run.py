@@ -7,7 +7,7 @@ from batch_processing.cmd.base import BaseCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
 
 
-class BatchNewRunCommand(BaseCommand):
+class BatchRunCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
