@@ -4,8 +4,6 @@ import textwrap
 import lazy_import
 
 
-# todo: move common dvmdostem args to a function
-
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
 MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
@@ -39,6 +37,31 @@ BatchLegacyMergeCommand = lazy_import.lazy_class(
 )
 
 
+def add_common_dvmdostem_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
+    )
+    parser.add_argument(
+        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run. By default, 0"
+    )
+    parser.add_argument(
+        "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
+    )
+    parser.add_argument(
+        "-t", type=int, default=0, help="Number of TRANSIENT years to run. By default, 0"
+    )
+    parser.add_argument(
+        "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
+    )
+    parser.add_argument(
+        "-l",
+        "--log-level",
+        choices=["debug", "info", "note", "warn", "err", "fatal", "disabled"],
+        default="disabled",
+        help="Set the log level",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="bp",
@@ -69,15 +92,58 @@ def main():
 
     parser_batch = subparsers.add_parser(
         "batch",
-        help="Slice, run and merge batches",
+        help="Batch related operations",
     )
     batch_subparsers = parser_batch.add_subparsers(
         title="Available subcommands", metavar=""
     )
 
+    parser_batch_split = batch_subparsers.add_parser(
+        "split",
+        help="Split the given input data into smaller batches"
+    )
+
+    parser_batch_split.add_argument(
+        "-sp",
+        "--slurm-partition",
+        choices=["spot", "compute"],
+        default="spot",
+        help="Specificy the Slurm partition. By default, spot",
+    )
+    parser_batch_split.add_argument(
+        "-i",
+        "--input-path",
+        required=True,
+        help=(
+            "Path to the directory that contains the input files. "
+            "Example: /mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50"
+        ),
+    )
+
+    add_common_dvmdostem_arguments(parser_batch_split)
+
+    parser_batch_split.set_defaults(
+        func=lambda args: BatchSplitCommand(args).execute()
+    )
+
+    parser_batch_run = batch_subparsers.add_parser(
+        "run", help="Submit the batches to the Slurm queue"
+    )
+    parser_batch_run.set_defaults(
+        func=lambda args: BatchRunCommand(args).execute()
+    )
+
+    parser_batch_merge = batch_subparsers.add_parser(
+        "merge", help="Merge the batches"
+    )
+
+    parser_batch_merge.set_defaults(
+        func=lambda args: BatchMergeCommand(args).execute()
+    )
+
     parser_batch_postprocess = batch_subparsers.add_parser(
         "postprocess",
-        help=("Post-processes the merged files and creates pre-define graphs",),
+        help="Post-process the merged files and creates pre-define graphs",
     )
 
     batch_postprocess_group = parser_batch_postprocess.add_mutually_exclusive_group(
@@ -94,70 +160,10 @@ def main():
         func=lambda args: BatchPostprocessCommand(args).execute()
     )
 
-    parser_batch_split = batch_subparsers.add_parser("split")
-
-    parser_batch_split.add_argument(
-        "-sp",
-        "--slurm-partition",
-        choices=["spot", "compute"],
-        default="spot",
-        help="Specificy the Slurm partition. By default, spot",
-    )
-    parser_batch_split.add_argument(
-        "-i",
-        "--input-path",
-        required=True,
-        help=(
-            "Path to the directory that contains the input files."
-            "Example: $HOME/input/four-basins"
-        ),
-    )
-    parser_batch_split.add_argument(
-        "-p", type=int, default=0, help="Number of PRE RUN years to run"
-    )
-    parser_batch_split.add_argument(
-        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run"
-    )
-    parser_batch_split.add_argument(
-        "-s", type=int, default=0, help="Number of SPINUP years to run"
-    )
-    parser_batch_split.add_argument(
-        "-t", type=int, default=0, help="Number of TRANSIENT years to run"
-    )
-    parser_batch_split.add_argument(
-        "-n", type=int, default=0, help="Number of SCENARIO years to run"
-    )
-    parser_batch_split.add_argument(
-        "-l",
-        "--log-level",
-        choices=["debug", "info", "note", "warn", "err", "fatal"],
-        default="disabled",
-        help="Sets the log level",
-    )
-
-    parser_batch_split.set_defaults(
-        func=lambda args: BatchSplitCommand(args).execute()
-    )
-
-    parser_batch_run = batch_subparsers.add_parser(
-        "run", help="Submit the batches to the Slurm queue"
-    )
-    parser_batch_run.set_defaults(
-        func=lambda args: BatchRunCommand(args).execute()
-    )
-
-    parser_batch_merge = batch_subparsers.add_parser(
-        "merge", help="Merge the completed batches"
-    )
-
-    parser_batch_merge.set_defaults(
-        func=lambda args: BatchMergeCommand(args).execute()
-    )
-
     parser_batch_legacy_split = batch_subparsers.add_parser(
         "legacy_split",
         help=(
-            "Split the input data into different batches."
+            "Split the input data into different batches. "
             "Note that this command removes the existing batches."
         ),
     )
@@ -171,28 +177,9 @@ def main():
         default="spot",
         help="Specificy the Slurm partition. By default, spot",
     )
-    parser_batch_legacy_split.add_argument(
-        "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-e", type=int, default=0, help="Number of EQUILIBRIUM years to run. By default, 0"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-t", type=int, default=0, help="Number of TRANSIENT years to run. By default, 0"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-l",
-        "--log-level",
-        choices=["debug", "info", "note", "warn", "err", "fatal", "disabled"],
-        default="disabled",
-        help="Sets the log level",
-    )
+
+    add_common_dvmdostem_arguments(parser_batch_legacy_split)
+
     parser_batch_legacy_split.set_defaults(func=lambda args: BatchLegacySplitCommand(args).execute())
 
     parser_batch_legacy_run = batch_subparsers.add_parser(
@@ -217,7 +204,7 @@ def main():
     parser_monitoring = subparsers.add_parser(
         "monitor",
         help=(
-            "Monitors the batches and if there is an unfinished job,"
+            "Monitor the batches and if there is an unfinished job,"
             "it resubmits that."
         ),
     )
@@ -278,39 +265,14 @@ def main():
         default="spot",
         help="Specificy the Slurm partition. By default, spot",
     )
-    parser_extract.add_argument(
-        "-p", type=int, default=0, help="Number of PRE RUN years to run. By default, 0"
-    )
-    parser_extract.add_argument(
-        "-e",
-        type=int,
-        default=0,
-        help="Number of EQUILIBRIUM years to run. By default, 0",
-    )
-    parser_extract.add_argument(
-        "-s", type=int, default=0, help="Number of SPINUP years to run. By default, 0"
-    )
-    parser_extract.add_argument(
-        "-t",
-        type=int,
-        default=0,
-        help="Number of TRANSIENT years to run. By default, 0",
-    )
-    parser_extract.add_argument(
-        "-n", type=int, default=0, help="Number of SCENARIO years to run. By default, 0"
-    )
-    parser_extract.add_argument(
-        "-l",
-        "--log-level",
-        choices=["debug", "info", "note", "warn", "err", "fatal", "disabled"],
-        default="disabled",
-        help="Sets the log level. By default, disabled",
-    )
+
+    add_common_dvmdostem_arguments(parser_extract)
+
     parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
 
     parser_diff = subparsers.add_parser(
         "diff",
-        help="Compares the NetCDF files in the given directories. "
+        help="Compare the NetCDF files in the given directories. "
         "The given two directories must contain the same files.",
     )
 
