@@ -2,6 +2,7 @@ netCDF4==1.6.5
 numpy==1.23.3
 google-cloud-compute==1.15.0
 google-cloud-storage==2.14.0
+lazy-import==0.2.2
 ruff==0.1.13
 pre-commit==3.5.0
 rich==13.7.1
