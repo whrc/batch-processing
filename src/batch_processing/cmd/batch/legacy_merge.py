@@ -10,7 +10,7 @@ from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import get_progress_bar
 
 
-class BatchMergeCommand(BaseCommand):
+class BatchLegacyMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args

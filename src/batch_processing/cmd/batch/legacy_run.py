@@ -8,7 +8,7 @@ from batch_processing.cmd.base import BaseCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
 
 
-class BatchRunCommand(BaseCommand):
+class BatchLegacyRunCommand(BaseCommand):
     BATCH_INTERVAL = 20
     SLEEP_TIME = 5
 

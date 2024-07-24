@@ -12,7 +12,7 @@ from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import clean_and_load_json, get_progress_bar, mkdir_p
 
 
-class BatchSplitCommand(BaseCommand):
+class BatchLegacySplitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
