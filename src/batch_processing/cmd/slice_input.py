@@ -1,7 +1,9 @@
 import multiprocessing as mp
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from string import Template
 from typing import List, Union
 
 import xarray as xr
@@ -13,6 +15,7 @@ from batch_processing.utils.utils import (
     Chunk,
     create_chunks,
     get_dimension_sizes,
+    get_project_root,
     interpret_path,
 )
 
@@ -53,6 +56,7 @@ def slice_and_save(chunk_task: ChunkTask) -> None:
 
 class SliceInputCommand(BaseCommand):
     def __init__(self, args):
+        super().__init__()
         self._args = args
 
         self.input_path = Path(interpret_path(args.input_path))
@@ -98,6 +102,30 @@ class SliceInputCommand(BaseCommand):
 
         return tasks
 
+    def _get_slurm_job(self) -> str:
+        template_path = Path(f"{get_project_root()}/templates/slice_input_job.sh")
+        with open(template_path) as file:
+            template = Template(file.read())
+
+        template = template.substitute(
+            {
+                "job_name": "slice input job",
+                "partition": "process",
+                "log_path": f"{self.exacloud_user_dir}/slice_input.log",
+                "input_path": self._args.input_path,
+                "output_path": self._args.output_path,
+            }
+        )
+
+        return template
+
+    def _submit_job(self) -> Union[str, str]:
+        job_script = self._get_slurm_job()
+        result = subprocess.run(
+            ["sbatch"], input=job_script, text=True, capture_output=True
+        )
+        return result.stdout, result.stderr
+
     def execute(self):
         if not self._args.force and self.output_path.exists():
             print(
@@ -116,8 +144,14 @@ class SliceInputCommand(BaseCommand):
         if should_terminate:
             exit(1)
 
-        chunks = create_chunks(DIMENSION_SIZE, SLICE_COUNT)
-        tasks = self._prepare_tasks_from_chunks(chunks)
+        if self._args.launch_as_job:
+            chunks = create_chunks(DIMENSION_SIZE, SLICE_COUNT)
+            tasks = self._prepare_tasks_from_chunks(chunks)
 
-        with mp.Pool(processes=mp.cpu_count()) as pool:
-            pool.map(slice_and_save, tasks)
+            with mp.Pool(processes=mp.cpu_count()) as pool:
+                pool.map(slice_and_save, tasks)
+        else:
+            stdout, stderr = self._submit_job()
+            if stderr == "":
+                print("Job is successfully submited.")
+                print(stdout)

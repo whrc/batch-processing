@@ -306,6 +306,13 @@ def main():
         action="store_true",
         help="Override if the given output path exists",
     )
+    parser_slice_input.add_argument(
+        "-l",
+        "--launch-as-job",
+        action="store_true",
+        help="Never pass this flag. It will be used internally "
+        "to lauch this command as a separate job.",
+    )
 
     parser_slice_input.set_defaults(func=lambda args: SliceInputCommand(args).execute())
 
