@@ -154,4 +154,4 @@ class SliceInputCommand(BaseCommand):
             stdout, stderr = self._submit_job()
             if stderr == "":
                 print("Job is successfully submited.")
-                print(stdout)
+                print(stdout.strip())
