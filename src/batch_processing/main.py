@@ -13,6 +13,9 @@ ExtractCellCommand = lazy_import.lazy_class(
     "batch_processing.cmd.extract_cell.ExtractCellCommand"
 )
 DiffCommand = lazy_import.lazy_class("batch_processing.cmd.diff.DiffCommand")
+SliceInputCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.slice_input.SliceInputCommand"
+)
 BatchSplitCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.split.BatchSplitCommand"
 )
@@ -119,9 +122,8 @@ def main():
         "--input-path",
         required=True,
         help=(
-            "Path to the directory that contains the input files. "
-            "Example: ",
-            "/mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50"
+            "Path to the directory that contains the input files. " "Example: ",
+            "/mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50",
         ),
     )
 
@@ -282,6 +284,30 @@ def main():
     parser_diff.add_argument("path_one")
     parser_diff.add_argument("path_two")
     parser_diff.set_defaults(func=lambda args: DiffCommand(args).execute())
+
+    parser_slice_input = subparsers.add_parser(
+        "slice_input",
+        help="Slices the given input data into smaller folders. "
+        "To use this command, the given input has to have at least 500,000 cells.",
+    )
+
+    parser_slice_input.add_argument(
+        "-i", "--input-path", required=True, help="Path to the input folder to slice"
+    )
+    parser_slice_input.add_argument(
+        "-o",
+        "--output-path",
+        required=True,
+        help="Path for writing the sliced input dataset",
+    )
+    parser_slice_input.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Override if the given output path exists",
+    )
+
+    parser_slice_input.set_defaults(func=lambda args: SliceInputCommand(args).execute())
 
     args = parser.parse_args()
 

@@ -1,12 +1,13 @@
 import errno
 import json
 import os
-import re
-import subprocess
-from pathlib import Path
 import random
+import re
 import string
-from typing import Union
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Union
 
 import cftime
 import matplotlib.pyplot as plt
@@ -20,7 +21,6 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-
 
 INPUT_FILES = [
     "co2.nc",
@@ -36,6 +36,8 @@ INPUT_FILES = [
     "projected-climate.nc",
     "historic-climate.nc",
 ]
+
+INPUT_FILES_TO_COPY = ["co2.nc", "projected-co2.nc"]
 
 IO_PATHS = {
     "parameter_dir": "parameters/",
@@ -54,6 +56,39 @@ IO_PATHS = {
     "hist_exp_fire_file": "input/historic-explicit-fire.nc",
     "proj_exp_fire_file": "input/projected-explicit-fire.nc",
 }
+
+
+@dataclass
+class Chunk:
+    id: int
+    start: int
+    end: int
+
+
+def create_chunks(total_size: int, num_chunks: int) -> List[Chunk]:
+    """
+    Create chunk boundaries for slicing the dataset.
+
+    Parameters:
+    total_size (int): The total size of the dimension to be chunked.
+    num_chunks (int): The number of chunks to create.
+
+    Returns:
+    List[Chunk]: A list of Chunk instances, each containing the chunk index,
+        start index, and end index.
+    """
+    if num_chunks <= 0:
+        raise ValueError("num_chunks must be a positive integer")
+
+    chunk_size = total_size // num_chunks
+    chunks = []
+
+    for i in range(num_chunks):
+        start = i * chunk_size
+        end = start + chunk_size if i < num_chunks - 1 else total_size
+        chunks.append(Chunk(i, start, end))
+
+    return chunks
 
 
 def run_command(command: list) -> None:
@@ -327,4 +362,12 @@ def interpret_path(path: str) -> str:
 
 
 def generate_random_string(N=5):
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=N))
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=N))
+
+
+def get_dimension_sizes(file_name: str) -> Union[int, int]:
+    """Retrieve the dimensions sizes from the given NetCDF file."""
+    with xr.open_dataset(file_name) as dataset:
+        x = dataset.dims["X"]
+        y = dataset.dims["Y"]
+    return x, y
