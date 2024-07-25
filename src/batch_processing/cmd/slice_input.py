@@ -31,18 +31,18 @@ def slice_and_save(chunk_task: ChunkTask) -> None:
     """Slice a chunk of the dataset and save it to a new NetCDF file."""
     try:
         print(f"Processing {chunk_task.src_path}...")
-        dataset = xr.open_dataset(
+        with xr.open_dataset(
             chunk_task.src_path, engine="netcdf4", decode_times=False
-        )
-        subset = dataset.isel(Y=slice(chunk_task.chunk.start, chunk_task.chunk.end))
-        subset.to_netcdf(
-            chunk_task.dest_path,
-            encoding={
-                "albers_conical_equal_area": {"dtype": "str"},
-                "lat": {"_FillValue": None},
-                "lon": {"_FillValue": None},
-            },
-        )
+        ) as dataset:
+            subset = dataset.isel(Y=slice(chunk_task.chunk.start, chunk_task.chunk.end))
+            subset.to_netcdf(
+                chunk_task.dest_path,
+                encoding={
+                    "albers_conical_equal_area": {"dtype": "str"},
+                    "lat": {"_FillValue": None},
+                    "lon": {"_FillValue": None},
+                },
+            )
         print(f"Done processing {chunk_task.src_path}!")
     except Exception as e:
         print(
