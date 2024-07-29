@@ -371,3 +371,16 @@ def get_dimension_sizes(file_name: str) -> Union[int, int]:
         x = dataset.dims["X"]
         y = dataset.dims["Y"]
     return x, y
+
+
+def get_batch_number(path: Union[Path, str]) -> int:
+    """Returns the batch number from the given path.
+    
+    An example argument would be like this:
+
+    /mnt/exacloud/dteber_woodwellclimate_org/output/batch_0/output/restart-eq.nc
+
+    The return value for the above path is 0.
+    """
+    match_found = re.search(r'batch_(\d+)', str(path))
+    return int(match_found.group(1)) if match_found else -1

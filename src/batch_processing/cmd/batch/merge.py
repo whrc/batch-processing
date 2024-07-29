@@ -2,8 +2,8 @@ from collections import defaultdict
 import subprocess
 from pathlib import Path
 import shutil
-import re
 
+from batch_processing.utils.utils import get_batch_number
 from batch_processing.cmd.base import BaseCommand
 
 
@@ -98,16 +98,3 @@ class BatchMergeCommand(BaseCommand):
                 *all_files,
                 self.result_dir / file_name,
             ])
-
-
-def get_batch_number(path: Path) -> int:
-    """Returns the batch number from the given path.
-    
-    An example argument would be like this:
-
-    /mnt/exacloud/dteber_woodwellclimate_org/output/batch_0/output/restart-eq.nc
-
-    The return value for the above path is 0.
-    """
-    match_found = re.search(r'batch_(\d+)', str(path))
-    return int(match_found.group(1)) if match_found else -1
