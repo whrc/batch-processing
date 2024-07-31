@@ -7,6 +7,7 @@ import string
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from string import Template
 from typing import List, Union
 
 import cftime
@@ -375,12 +376,39 @@ def get_dimensions(file_name: str) -> Union[int, int]:
 
 def get_batch_number(path: Union[Path, str]) -> int:
     """Returns the batch number from the given path.
-    
+
     An example argument would be like this:
 
     /mnt/exacloud/dteber_woodwellclimate_org/output/batch_0/output/restart-eq.nc
 
     The return value for the above path is 0.
     """
-    match_found = re.search(r'batch_(\d+)', str(path))
+    match_found = re.search(r"batch_(\d+)", str(path))
     return int(match_found.group(1)) if match_found else -1
+
+
+def render_slurm_job_script(template_name: str, values: dict) -> str:
+    """Reads the specified template file and populates it with the given values.
+
+    Args:
+        template_name (str): Name of the template file located in the templates folder
+                             at the root of the project.
+        values (dict): A dictionary of key-value pairs for substitution in the template.
+                       Keys represent placeholders in the template, and values are the
+                       corresponding substitution values.
+
+    Returns:
+        str: The populated job script ready to be submitted to Slurm.
+
+    Raises:
+        FileNotFoundError: If the specified template file does not exist.
+
+    """
+    template_path = get_project_root() / "templates" / template_name
+    if not template_path.exists():
+        raise FileNotFoundError(f"{template_path} doesn't exist.")
+
+    with open(template_path) as file:
+        template = Template(file.read())
+
+    return template.substitute(values)

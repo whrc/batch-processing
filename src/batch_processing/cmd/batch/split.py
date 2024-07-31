@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from multiprocessing import Pool
 from pathlib import Path
-from string import Template
 from typing import Union
 
 from batch_processing.cmd.base import BaseCommand
@@ -15,7 +14,7 @@ from batch_processing.utils.utils import (
     INPUT_FILES,
     IO_PATHS,
     get_dimensions,
-    get_project_root,
+    render_slurm_job_script,
 )
 
 BATCH_DIRS = []
@@ -58,24 +57,20 @@ class BatchSplitCommand(BaseCommand):
         with open(config_file, "w") as f:
             json.dump(config_data, f, indent=4)
 
-        with open(get_project_root() / "templates" / "slurm_runner.sh") as file:
-            template = Template(file.read())
-
-        slurm_runner = template.substitute(
-            {
-                "job_name": f"batch-{index}",
-                "partition": self._args.slurm_partition,
-                "dvmdostem_binary": self.dvmdostem_bin_path,
-                "log_file_path": self.log_path / f"batch-{index}",
-                "log_level": self._args.log_level,
-                "config_path": config_file,
-                "p": self._args.p,
-                "e": self._args.e,
-                "s": self._args.s,
-                "t": self._args.t,
-                "n": self._args.n,
-            }
-        )
+        substitution_values = {
+            "job_name": f"batch-{index}",
+            "partition": self._args.slurm_partition,
+            "dvmdostem_binary": self.dvmdostem_bin_path,
+            "log_file_path": self.log_path / f"batch-{index}",
+            "log_level": self._args.log_level,
+            "config_path": config_file,
+            "p": self._args.p,
+            "e": self._args.e,
+            "s": self._args.s,
+            "t": self._args.t,
+            "n": self._args.n,
+        }
+        slurm_runner = render_slurm_job_script("slurm_runner.sh", substitution_values)
 
         with open(f"{batch_dir}/slurm_runner.sh", "w") as file:
             file.write(slurm_runner)
@@ -128,33 +123,21 @@ class BatchSplitCommand(BaseCommand):
 
         return chunks
 
-    # todo: replace this function with a generic function
-    # take the template file name and the dict as a parameter
-    # then return the template string
-    def _get_slurm_job(self) -> str:
-        template_path = get_project_root() / "templates" / "split_job.sh"
-        with open(template_path) as file:
-            template = Template(file.read())
-
-        template = template.substitute(
-            {
-                "job_name": "split_job",
-                "partition": self._args.slurm_partition,
-                "log_path": self.exacloud_user_dir,
-                "p": self._args.p,
-                "e": self._args.e,
-                "s": self._args.s,
-                "t": self._args.t,
-                "n": self._args.n,
-                "input_path": self._args.input_path,
-                "batches": self._args.batches,
-                "log_level": self._args.log_level,
-            }
-        )
-        return template
-
     def _submit_job(self) -> Union[str, str]:
-        job_script = self._get_slurm_job()
+        substitution_values = {
+            "job_name": "split_job",
+            "partition": self._args.slurm_partition,
+            "log_path": self.exacloud_user_dir,
+            "p": self._args.p,
+            "e": self._args.e,
+            "s": self._args.s,
+            "t": self._args.t,
+            "n": self._args.n,
+            "input_path": self._args.input_path,
+            "batches": self._args.batches,
+            "log_level": self._args.log_level,
+        }
+        job_script = render_slurm_job_script("split_job.sh", substitution_values)
         result = subprocess.run(
             ["sbatch"], input=job_script, text=True, capture_output=True
         )
@@ -301,7 +284,3 @@ def split_file(start_index, end_index, input_path, split_dimension):
                     ]
                 )
         print("done splitting ", input_file)
-
-
-# todo: spawn a processing node to do the splitting
-# do this for only iem dataset

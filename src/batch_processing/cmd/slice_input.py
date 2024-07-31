@@ -3,7 +3,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from string import Template
 from typing import List, Union
 
 import xarray as xr
@@ -15,8 +14,8 @@ from batch_processing.utils.utils import (
     Chunk,
     create_chunks,
     get_dimension_sizes,
-    get_project_root,
     interpret_path,
+    render_slurm_job_script,
 )
 
 MIN_CELL_COUNT = 500_000
@@ -102,25 +101,15 @@ class SliceInputCommand(BaseCommand):
 
         return tasks
 
-    def _get_slurm_job(self) -> str:
-        template_path = Path(f"{get_project_root()}/templates/slice_input_job.sh")
-        with open(template_path) as file:
-            template = Template(file.read())
-
-        template = template.substitute(
-            {
-                "job_name": "slice input job",
-                "partition": "process",
-                "log_path": f"{self.exacloud_user_dir}/slice_input.log",
-                "input_path": self._args.input_path,
-                "output_path": self._args.output_path,
-            }
-        )
-
-        return template
-
     def _submit_job(self) -> Union[str, str]:
-        job_script = self._get_slurm_job()
+        substitution_values = {
+            "job_name": "slice input job",
+            "partition": "process",
+            "log_path": f"{self.exacloud_user_dir}/slice_input.log",
+            "input_path": self._args.input_path,
+            "output_path": self._args.output_path,
+        }
+        job_script = render_slurm_job_script("slice_input_job.sh", substitution_values)
         result = subprocess.run(
             ["sbatch"], input=job_script, text=True, capture_output=True
         )
@@ -155,3 +144,5 @@ class SliceInputCommand(BaseCommand):
             if stderr == "":
                 print("Job is successfully submited.")
                 print(stdout.strip())
+            else:
+                print(f"Something went wrong when submitting the job {stderr}")
