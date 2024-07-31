@@ -12,6 +12,7 @@ class BatchRunCommand(BaseCommand):
         super().__init__()
         self._args = args
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
+        self._args.base_batch_dir = self.base_batch_dir
 
     def execute(self):
         full_paths = list(self.base_batch_dir.glob("*/slurm_runner.sh"))

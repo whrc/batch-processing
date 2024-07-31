@@ -29,6 +29,7 @@ class BatchSplitCommand(BaseCommand):
         self._args = args
         self.output_dir = Path(self.output_dir)
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
+        self.log_path = Path(self.base_batch_dir, "logs")
 
     def _run_utils(self, batch_dir, batch_input_dir):
         subprocess.run(
@@ -52,15 +53,15 @@ class BatchSplitCommand(BaseCommand):
         with open(config_file, "w") as f:
             json.dump(config_data, f, indent=4)
 
-        with open(f"{get_project_root()}/templates/slurm_runner.sh") as file:
+        with open(get_project_root() / "templates" / "slurm_runner.sh") as file:
             template = Template(file.read())
 
         slurm_runner = template.substitute(
             {
                 "job_name": f"batch-{index}",
                 "partition": self._args.slurm_partition,
-                "user": self.user,
                 "dvmdostem_binary": self.dvmdostem_bin_path,
+                "log_file_path": self.log_path / f"batch-{index}",
                 "log_level": self._args.log_level,
                 "config_path": config_file,
                 "p": self._args.p,
@@ -155,6 +156,7 @@ class BatchSplitCommand(BaseCommand):
 
         print("Set up batch directories")
         self.base_batch_dir.mkdir(exist_ok=True)
+        self.log_path.mkdir(exist_ok=True)
         for index in range(DIMENSION_SIZE):
             path = self.base_batch_dir / f"batch_{index}"
             BATCH_DIRS.append(path)

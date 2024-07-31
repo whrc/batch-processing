@@ -1,12 +1,20 @@
-from pathlib import Path
-import subprocess
-import shutil
 import json
+import shutil
+import subprocess
+from pathlib import Path
 from string import Template
+
 import netCDF4
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import interpret_path, get_project_root, clean_and_load_json, generate_random_string, INPUT_FILES, IO_PATHS
+from batch_processing.utils.utils import (
+    INPUT_FILES,
+    IO_PATHS,
+    clean_and_load_json,
+    generate_random_string,
+    get_project_root,
+    interpret_path,
+)
 
 
 class ExtractCellCommand(BaseCommand):
@@ -45,28 +53,31 @@ class ExtractCellCommand(BaseCommand):
             if input_file.name in ["co2.nc", "projected-co2.nc"]:
                 shutil.copy(input_file, dest_path / input_file.name)
             else:
-                subprocess.run([
-                    "ncks",
-                    "-O",
-                    "-h",
-                    "-d",
-                    f"X,{self._args.X}",
-                    "-d",
-                    f"Y,{self._args.Y}",
-                    input_file,
-                    dest_path / input_file.name,
-                ])
+                subprocess.run(
+                    [
+                        "ncks",
+                        "-O",
+                        "-h",
+                        "-d",
+                        f"X,{self._args.X}",
+                        "-d",
+                        f"Y,{self._args.Y}",
+                        input_file,
+                        dest_path / input_file.name,
+                    ]
+                )
 
     def _write_slurm_runner(self):
         with open(get_project_root() / "templates" / "slurm_runner.sh") as file:
             template = Template(file.read())
 
+        job_name = generate_random_string()
         slurm_runner = template.substitute(
             {
-                "job_name": generate_random_string(),
+                "job_name": job_name,
                 "partition": self._args.slurm_partition,
-                "user": self.user,
                 "dvmdostem_binary": self.dvmdostem_bin_path,
+                "log_file_path": self._args.output_path / f"{job_name}.log",
                 "log_level": self._args.log_level,
                 "config_path": Path(self._args.output_path / "config" / "config.js"),
                 "p": self._args.p,
@@ -99,7 +110,9 @@ class ExtractCellCommand(BaseCommand):
                 f"Couldn't found in {self.dvmdostem_path}"
             )
 
-        if not self._do_coords_in_range(Path(self._args.input_path / "drainage.nc"), self._args.X, self._args.Y):
+        if not self._do_coords_in_range(
+            Path(self._args.input_path / "drainage.nc"), self._args.X, self._args.Y
+        ):
             raise Exception(
                 "The given coordinates are out of bounds for the given dataset. Provided values are: "
                 f"\nX: {self._args.X}"

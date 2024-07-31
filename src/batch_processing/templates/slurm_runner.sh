@@ -4,7 +4,7 @@
 
 #SBATCH -p $partition
 
-#SBATCH -o /mnt/exacloud/$user/slurm-logs/$job_name.out
+# SBATCH -o $log_file_path
 
 #SBATCH -N 1
 

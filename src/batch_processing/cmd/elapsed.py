@@ -13,7 +13,7 @@ class ElapsedCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
-        self._file_path = f"{self.exacloud_user_dir}/elapsed_time.txt"
+        self._file_path = f"{args.base_batch_dir}/elapsed_time.txt"
         self._sleep_time = 60
 
     def get_now_and_write(self, s: str):
