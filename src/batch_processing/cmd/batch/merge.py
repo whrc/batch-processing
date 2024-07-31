@@ -76,7 +76,6 @@ class BatchMergeCommand(BaseCommand):
         for file_name in grouped_files:
             all_files = grouped_files[file_name]
             for index, file in enumerate(all_files):
-                print(file)
                 try:
                     _ = subprocess.run(
                         [
@@ -110,5 +109,5 @@ class BatchMergeCommand(BaseCommand):
                     self.result_dir / file_name,
                 ]
             )
-
-# todo: remove the duplicated files
+            # remove the intermediary files
+            _ = [file.unlink() for file in all_files]
