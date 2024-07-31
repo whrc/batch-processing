@@ -365,7 +365,7 @@ def generate_random_string(N=5):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=N))
 
 
-def get_dimension_sizes(file_name: str) -> Union[int, int]:
+def get_dimensions(file_name: str) -> Union[int, int]:
     """Retrieve the dimensions sizes from the given NetCDF file."""
     with xr.open_dataset(file_name) as dataset:
         x = dataset.dims["X"]
