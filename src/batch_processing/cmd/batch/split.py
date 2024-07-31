@@ -9,13 +9,12 @@ from multiprocessing import Pool
 from pathlib import Path
 from string import Template
 
-import netCDF4
-
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     INPUT_FILES,
     IO_PATHS,
     get_project_root,
+    get_dimensions,
 )
 
 BATCH_DIRS = []
@@ -32,6 +31,11 @@ class BatchSplitCommand(BaseCommand):
         self.log_path = Path(self.base_batch_dir, "logs")
 
     def _run_utils(self, batch_dir, batch_input_dir):
+        # todo: instead of running this file, implement what this file does
+        # inside bp.
+        # later, delete the last portion of the execute() code which removes
+        # duplicated input files.
+        # doing that should save us some time.
         subprocess.run(
             [
                 os.path.join(SETUP_SCRIPTS_PATH, "setup_working_directory.py"),
@@ -80,13 +84,6 @@ class BatchSplitCommand(BaseCommand):
         start, end = (int(val) for val in chunk_range.split("_"))
         return end - start
 
-    def _get_dimensions(self, path):
-        with netCDF4.Dataset(path, "r") as dataset:
-            X = dataset.dimensions["X"].size
-            Y = dataset.dimensions["Y"].size
-
-        return X, Y
-
     def _calculate_dimensions(self):
         INPUT_FILE = "run-mask.nc"
         input_path = Path(self._args.input_path)
@@ -94,14 +91,14 @@ class BatchSplitCommand(BaseCommand):
 
         # unsliced, normal input dataset
         if all([item.is_file() for item in items]):
-            X, Y = self._get_dimensions(input_path / INPUT_FILE)
+            X, Y = get_dimensions(input_path / INPUT_FILE)
             return X, Y, False
 
         if all([item.is_dir() for item in items]):
             X = Y = 0
             for item in items:
                 path = item / INPUT_FILE
-                temp_x, temp_y = self._get_dimensions(path)
+                temp_x, temp_y = get_dimensions(path)
                 X += temp_x
                 Y += temp_y
 
