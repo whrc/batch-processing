@@ -8,13 +8,14 @@ from itertools import product
 from multiprocessing import Pool
 from pathlib import Path
 from string import Template
+from typing import Union
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     INPUT_FILES,
     IO_PATHS,
-    get_project_root,
     get_dimensions,
+    get_project_root,
 )
 
 BATCH_DIRS = []
@@ -31,11 +32,11 @@ class BatchSplitCommand(BaseCommand):
         self.log_path = Path(self.base_batch_dir, "logs")
 
     def _run_utils(self, batch_dir, batch_input_dir):
-        # todo: instead of running this file, implement what this file does
+        # todo: instead of running this file, implement what this file does
         # inside bp.
-        # later, delete the last portion of the execute() code which removes
+        # later, delete the last portion of the execute() code which removes
         # duplicated input files.
-        # doing that should save us some time.
+        # doing that should save us some time.
         subprocess.run(
             [
                 os.path.join(SETUP_SCRIPTS_PATH, "setup_working_directory.py"),
@@ -127,8 +128,50 @@ class BatchSplitCommand(BaseCommand):
 
         return chunks
 
+    # todo: replace this function with a generic function
+    # take the template file name and the dict as a parameter
+    # then return the template string
+    def _get_slurm_job(self) -> str:
+        template_path = get_project_root() / "templates" / "split_job.sh"
+        with open(template_path) as file:
+            template = Template(file.read())
+
+        template = template.substitute(
+            {
+                "job_name": "split_job",
+                "partition": self._args.slurm_partition,
+                "log_path": self.exacloud_user_dir,
+                "p": self._args.p,
+                "e": self._args.e,
+                "s": self._args.s,
+                "t": self._args.t,
+                "n": self._args.n,
+                "input_path": self._args.input_path,
+                "batches": self._args.batches,
+                "log_level": self._args.log_level,
+            }
+        )
+        return template
+
+    def _submit_job(self) -> Union[str, str]:
+        job_script = self._get_slurm_job()
+        result = subprocess.run(
+            ["sbatch"], input=job_script, text=True, capture_output=True
+        )
+        return result.stdout, result.stderr
+
     def execute(self):
         X, Y, use_parallel = self._calculate_dimensions()
+
+        if use_parallel and not self._args.launch_as_job:
+            stdout, stderr = self._submit_job()
+            if stderr == "":
+                print("The split job is successfully submitted.")
+                print(stdout.strip())
+            else:
+                print("Something went wrong when submitting the job")
+
+            return
 
         print("Dimension size of X:", X)
         print("Dimension size of Y:", Y)

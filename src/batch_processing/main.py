@@ -138,6 +138,12 @@ def main():
             "/mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50",
         ),
     )
+    parser_batch_split.add_argument(
+        "--launch-as-job",
+        action="store_true",
+        help="Never pass this flag. It will be used internally "
+        "to lauch this command as a separate job.",
+    )
 
     add_common_dvmdostem_arguments(parser_batch_split)
     add_batch_path_argument(parser_batch_split)
