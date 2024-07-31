@@ -110,3 +110,5 @@ class BatchMergeCommand(BaseCommand):
                     self.result_dir / file_name,
                 ]
             )
+
+# todo: remove the duplicated files
