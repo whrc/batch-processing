@@ -12,7 +12,7 @@ class BatchMergeCommand(BaseCommand):
         super().__init__()
         self._args = args
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
-        self.result_dir = Path(self.result_dir)
+        self.result_dir = self.base_batch_dir / "all_merged"
 
     def execute(self):
         batch_output_dirs = self.base_batch_dir.glob("*/output")
