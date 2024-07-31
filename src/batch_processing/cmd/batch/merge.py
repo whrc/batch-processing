@@ -1,23 +1,23 @@
-from collections import defaultdict
-import subprocess
-from pathlib import Path
 import shutil
+import subprocess
+from collections import defaultdict
+from pathlib import Path
 
-from batch_processing.utils.utils import get_batch_number
 from batch_processing.cmd.base import BaseCommand
+from batch_processing.utils.utils import get_batch_number
 
 
 class BatchMergeCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
         self._args = args
-        self.output_dir = Path(self.output_dir)
+        self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
         self.result_dir = Path(self.result_dir)
 
     def execute(self):
-        batch_output_dirs = self.output_dir.glob("*/output")
+        batch_output_dirs = self.base_batch_dir.glob("*/output")
 
-        # keys hold the file names
+        # keys hold the file names
         # values hold the paths of that files
         grouped_files = defaultdict(list)
 
@@ -39,17 +39,19 @@ class BatchMergeCommand(BaseCommand):
                 if any(map(file_as_str.__contains__, ["restart", "run_status"])):
                     shutil.copy(file, temp_file)
                 else:
-                    subprocess.run([
-                        "ncrename",
-                        "-O",
-                        "-h",
-                        "-d",
-                        "x,X",
-                        "-d",
-                        "y,Y",
-                        file_as_str,
-                        temp_file,
-                    ])
+                    subprocess.run(
+                        [
+                            "ncrename",
+                            "-O",
+                            "-h",
+                            "-d",
+                            "x,X",
+                            "-d",
+                            "y,Y",
+                            file_as_str,
+                            temp_file,
+                        ]
+                    )
 
                 new_files.append(temp_file)
 
@@ -58,15 +60,17 @@ class BatchMergeCommand(BaseCommand):
         for file_name in grouped_files:
             all_files = grouped_files[file_name]
             for file in all_files:
-                subprocess.run([
-                    "ncks",
-                    "-O",
-                    "-h",
-                    "--mk_rec_dmn",
-                    "Y",
-                    file,
-                    file,
-                ])
+                subprocess.run(
+                    [
+                        "ncks",
+                        "-O",
+                        "-h",
+                        "--mk_rec_dmn",
+                        "Y",
+                        file,
+                        file,
+                    ]
+                )
 
         print("ncap2")
         for file_name in grouped_files:
@@ -74,14 +78,20 @@ class BatchMergeCommand(BaseCommand):
             for index, file in enumerate(all_files):
                 print(file)
                 try:
-                    completed_process = subprocess.run([
-                        'ncap2',
-                        '-O',
-                        '-h',
-                        '-s', f'Y[$Y]={index}; X[$X]=array(0, 1, $X);',
-                        file.as_posix(),
-                        file.as_posix(),
-                    ], check=True, capture_output=True, text=True)
+                    _ = subprocess.run(
+                        [
+                            "ncap2",
+                            "-O",
+                            "-h",
+                            "-s",
+                            f"Y[$Y]={index}; X[$X]=array(0, 1, $X);",
+                            file.as_posix(),
+                            file.as_posix(),
+                        ],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
                 except subprocess.CalledProcessError as e:
                     print(f"Error occurred: {e}")
                     print(f"Output: {e.stdout}")
@@ -91,10 +101,12 @@ class BatchMergeCommand(BaseCommand):
         print("concatenating the files")
         for file_name in grouped_files:
             all_files = grouped_files[file_name]
-            subprocess.run([
-                "ncrcat",
-                "-O",
-                "-h",
-                *all_files,
-                self.result_dir / file_name,
-            ])
+            subprocess.run(
+                [
+                    "ncrcat",
+                    "-O",
+                    "-h",
+                    *all_files,
+                    self.result_dir / file_name,
+                ]
+            )

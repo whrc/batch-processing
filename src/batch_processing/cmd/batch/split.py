@@ -13,9 +13,9 @@ import netCDF4
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
-    get_project_root,
     INPUT_FILES,
     IO_PATHS,
+    get_project_root,
 )
 
 BATCH_DIRS = []
@@ -28,6 +28,7 @@ class BatchSplitCommand(BaseCommand):
         super().__init__()
         self._args = args
         self.output_dir = Path(self.output_dir)
+        self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
 
     def _run_utils(self, batch_dir, batch_input_dir):
         subprocess.run(
@@ -141,18 +142,21 @@ class BatchSplitCommand(BaseCommand):
         print("Dimension size:", DIMENSION_SIZE)
 
         print("Cleaning up the existing directories")
-        pattern = re.compile(r"^batch_\d+$")
-        to_be_removed = [
-            d for d in self.output_dir.iterdir() if d.is_dir() and pattern.match(d.name)
-        ]
+        if self.base_batch_dir.exists():
+            pattern = re.compile(r"^batch_\d+$")
+            to_be_removed = [
+                d
+                for d in self.base_batch_dir.iterdir()
+                if d.is_dir() and pattern.match(d.name)
+            ]
 
-        with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-            executor.map(lambda elem: shutil.rmtree(elem), to_be_removed)
+            with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+                executor.map(lambda elem: shutil.rmtree(elem), to_be_removed)
 
         print("Set up batch directories")
-        self.output_dir.mkdir(exist_ok=True)
+        self.base_batch_dir.mkdir(exist_ok=True)
         for index in range(DIMENSION_SIZE):
-            path = self.output_dir / f"batch_{index}"
+            path = self.base_batch_dir / f"batch_{index}"
             BATCH_DIRS.append(path)
 
             path = os.path.join(path, "input")
@@ -167,14 +171,20 @@ class BatchSplitCommand(BaseCommand):
             sliced_dirs = os.listdir(self._args.input_path)
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
-                # todo: change this hard-coded value
+                # todo: change this hard-coded value
                 chunks = self.create_chunks(185, os.cpu_count())
                 input_file_path = os.path.join(
                     self._args.input_path, sliced_dir, input_file
                 )
                 for start_chunk, end_chunk in chunks:
                     tasks.append(
-                        (start_chunk, end_chunk, input_file_path, input_file, SPLIT_DIMENSION)
+                        (
+                            start_chunk,
+                            end_chunk,
+                            input_file_path,
+                            input_file,
+                            SPLIT_DIMENSION,
+                        )
                     )
 
             with Pool(processes=os.cpu_count()) as pool:
@@ -192,12 +202,12 @@ class BatchSplitCommand(BaseCommand):
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda args: self._configure(*args), enumerate(BATCH_DIRS))
 
-        # we have to do this otherwise there would be two inputs folders:
-        # input/ and inputs/
+        # we have to do this otherwise there would be two inputs folders:
+        # input/ and inputs/
         #
-        # inputs/ folder is created because we are calling setup_working_directory.py
+        # inputs/ folder is created because we are calling setup_working_directory.py
         print("Delete duplicated inputs files")
-        duplicated_input_paths = self.output_dir.glob("*/inputs")
+        duplicated_input_paths = self.base_batch_dir.glob("*/inputs")
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda elem: shutil.rmtree(elem), duplicated_input_paths)
 
@@ -250,5 +260,6 @@ def split_file(start_index, end_index, input_path, split_dimension):
                 )
         print("done splitting ", input_file)
 
-# todo: spawn a processing node to do the splitting
-# do this for only iem dataset
+
+# todo: spawn a processing node to do the splitting
+# do this for only iem dataset

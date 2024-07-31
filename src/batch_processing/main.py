@@ -70,6 +70,18 @@ def add_common_dvmdostem_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_batch_path_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-b",
+        "--batches",
+        required=True,
+        help=(
+            "Path to store the splitted batches. The given path will be concataned "
+            "with /mnt/exacloud/$USER",
+        ),
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="bp",
@@ -128,15 +140,21 @@ def main():
     )
 
     add_common_dvmdostem_arguments(parser_batch_split)
+    add_batch_path_argument(parser_batch_split)
 
     parser_batch_split.set_defaults(func=lambda args: BatchSplitCommand(args).execute())
 
     parser_batch_run = batch_subparsers.add_parser(
         "run", help="Submit the batches to the Slurm queue"
     )
+
+    add_batch_path_argument(parser_batch_run)
+
     parser_batch_run.set_defaults(func=lambda args: BatchRunCommand(args).execute())
 
     parser_batch_merge = batch_subparsers.add_parser("merge", help="Merge the batches")
+
+    add_batch_path_argument(parser_batch_merge)
 
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
 
