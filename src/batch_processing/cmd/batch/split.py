@@ -1,24 +1,25 @@
-import json
 import os
-import re
 import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     INPUT_FILES,
-    IO_PATHS,
+    create_slurm_script,
     get_dimensions,
     render_slurm_job_script,
+    submit_job,
+    update_config,
+    write_text_file,
 )
 
-BATCH_DIRS = []
-BATCH_INPUT_DIRS = []
+BATCH_DIRS: List[Path] = []
+BATCH_INPUT_DIRS: List[Path] = []
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
 
 
@@ -29,6 +30,8 @@ class BatchSplitCommand(BaseCommand):
         self.output_dir = Path(self.output_dir)
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
         self.log_path = Path(self.base_batch_dir, "logs")
+
+        self.log_path.mkdir(exist_ok=True, parents=True)
 
     def _run_utils(self, batch_dir, batch_input_dir):
         # todo: instead of running this file, implement what this file does
@@ -46,16 +49,9 @@ class BatchSplitCommand(BaseCommand):
             ]
         )
 
-    def _configure(self, index, batch_dir):
-        config_file = os.path.join(batch_dir, "config/config.js")
-        with open(config_file) as f:
-            config_data = json.load(f)
-
-        for key, val in IO_PATHS.items():
-            config_data["IO"][key] = f"{batch_dir}/{val}"
-
-        with open(config_file, "w") as f:
-            json.dump(config_data, f, indent=4)
+    def _configure(self, index: int, batch_dir: Path) -> None:
+        config_file = batch_dir / "config" / "config.js"
+        update_config(path=config_file.as_posix(), prefix_value=batch_dir)
 
         substitution_values = {
             "job_name": f"batch-{index}",
@@ -70,10 +66,11 @@ class BatchSplitCommand(BaseCommand):
             "t": self._args.t,
             "n": self._args.n,
         }
-        slurm_runner = render_slurm_job_script("slurm_runner.sh", substitution_values)
 
-        with open(f"{batch_dir}/slurm_runner.sh", "w") as file:
-            file.write(slurm_runner)
+        script_path = batch_dir / "slurm_runner.sh"
+        create_slurm_script(
+            script_path.as_posix(), "slurm_runner.sh", substitution_values
+        )
 
     def _get_chunk_size(self, sliced_dir):
         chunk_range = sliced_dir.split("-")[-1]
@@ -123,11 +120,12 @@ class BatchSplitCommand(BaseCommand):
 
         return chunks
 
-    def _submit_job(self) -> Union[str, str]:
+    def _spawn_split_job(self, job_name: str = "split_job") -> Union[str, str]:
+        file_name = "split_job.sh"
         substitution_values = {
-            "job_name": "split_job",
+            "job_name": job_name,
             "partition": self._args.slurm_partition,
-            "log_path": self.exacloud_user_dir,
+            "log_path": self.log_path / job_name,
             "p": self._args.p,
             "e": self._args.e,
             "s": self._args.s,
@@ -137,17 +135,22 @@ class BatchSplitCommand(BaseCommand):
             "batches": self._args.batches,
             "log_level": self._args.log_level,
         }
-        job_script = render_slurm_job_script("split_job.sh", substitution_values)
-        result = subprocess.run(
-            ["sbatch"], input=job_script, text=True, capture_output=True
-        )
+        job_script = render_slurm_job_script(file_name, substitution_values)
+        write_text_file(self.base_batch_dir / file_name, job_script)
+
+        result = submit_job(self.base_batch_dir / file_name)
         return result.stdout, result.stderr
 
     def execute(self):
         X, Y, use_parallel = self._calculate_dimensions()
 
+        # The split operation is invoked. Launch a node to process
+        # this operation.
+        #
+        # We enter into this statement when the provided input set
+        # is too big. So, a node that has multiple CPUs is spawned.
         if use_parallel and not self._args.launch_as_job:
-            stdout, stderr = self._submit_job()
+            stdout, stderr = self._spawn_split_job()
             if stderr == "":
                 print("The split job is successfully submitted.")
                 print(stdout.strip())
@@ -167,15 +170,7 @@ class BatchSplitCommand(BaseCommand):
 
         print("Cleaning up the existing directories")
         if self.base_batch_dir.exists():
-            pattern = re.compile(r"^batch_\d+$")
-            to_be_removed = [
-                d
-                for d in self.base_batch_dir.iterdir()
-                if d.is_dir() and pattern.match(d.name)
-            ]
-
-            with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-                executor.map(lambda elem: shutil.rmtree(elem), to_be_removed)
+            shutil.rmtree(self.base_batch_dir)
 
         print("Set up batch directories")
         self.base_batch_dir.mkdir(exist_ok=True)

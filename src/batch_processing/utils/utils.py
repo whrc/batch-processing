@@ -8,6 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from string import Template
+from subprocess import CompletedProcess
 from typing import List, Union
 
 import cftime
@@ -412,3 +413,139 @@ def render_slurm_job_script(template_name: str, values: dict) -> str:
         template = Template(file.read())
 
     return template.substitute(values)
+
+
+def read_text_file(path: str) -> str:
+    """Reads and returns the content of a text file.
+
+    Args:
+        path (str): The file system path to the text file to be read.
+
+    Returns:
+        str: The content of the file as a string.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"The given file is not found: {path}")
+
+    with open(path) as file:
+        content = file.read()
+
+    return content
+
+
+def read_json_file(path: str) -> dict:
+    """Reads and returns the content of a JSON file.
+
+    Args:
+        path (str): The file system path to the JSON file to be read.
+
+    Returns:
+        dict: The content of the file as a dictionary.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        json.JSONDecodeError: If the file content is not valid JSON.
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"The given file is not found: {path}")
+
+    with open(path) as file:
+        content = json.load(file)
+
+    return content
+
+
+def write_text_file(path: str, content: str) -> None:
+    """A self-explanatory function
+
+    Args:
+        path (str): The file system path where the content should be written.
+        content (str): The content to write to the file.
+
+    Returns:
+        None
+    """
+    with open(path, "w") as file:
+        file.write(content)
+
+
+def write_json_file(path: str, content: dict, indent: int = 4) -> None:
+    """Writes a dictionary to a file in JSON format with specified indentation.
+
+    Args:
+        path (str): The file system path where the JSON content should be written.
+        content (dict): A dictionary representing the JSON data to be written
+            to the file.
+        indent (int, optional): The number of spaces to use as indentation in the
+            JSON file. Defaults to 4.
+
+    Returns:
+        None
+    """
+    with open(path, "w") as file:
+        json.dump(content, file, indent=indent)
+
+
+def submit_job(path: str) -> CompletedProcess:
+    """Submits a job script to the Slurm workload manager using the `sbatch` command.
+
+    Args:
+        path (str): The file system path to the job script to be submitted.
+
+    Returns:
+        CompletedProcess: An object representing the completed process, containing
+                          information about the execution of the `sbatch` command,
+                          including stdout, stderr, and the return code.
+
+    Raises:
+        FileNotFoundError: If the specified job script file does not exist.
+        subprocess.CalledProcessError: If the `sbatch` command fails.
+    """
+    command = ["sbatch", path]
+    return subprocess.run(command, text=True, capture_output=True)
+
+
+def update_config(path: str, prefix_value: str) -> None:
+    """Updates the 'IO' section of config.js with new paths.
+
+    This function reads the JSON configuration file, modifies the 'IO' section
+    by updating the paths with a new prefix, and then writes the updated
+    configuration back to the file.
+
+    Args:
+        path (str): The file system path to the JSON configuration file to be updated.
+        prefix_value (str): The new prefix to be added to the paths in the 'IO' section.
+
+    Returns:
+        None
+    """
+    config_data = read_json_file(path)
+    for key, val in IO_PATHS.items():
+        config_data["IO"][key] = f"{prefix_value}/{val}"
+
+    write_json_file(path, config_data)
+
+
+def create_slurm_script(
+    path: str, template_name: str, substitution_values: dict
+) -> None:
+    """Creates a Slurm job script by rendering a template and writing it to a file.
+
+    This function uses a template and a set of substitution values to generate a
+    Slurm job script, and then writes the resulting script to the specified path.
+
+    Args:
+        path (str): The file system path where the Slurm job script should be saved.
+        template_name (str): The name of the template file located in the templates
+            folder at the root of the project.
+        substitution_values (dict): A dictionary of key-value pairs for substituting
+            placeholders in the template.
+
+    Returns:
+        None
+    """
+    slurm_runner = render_slurm_job_script(template_name, substitution_values)
+    write_text_file(path, slurm_runner)

@@ -1,10 +1,10 @@
-import subprocess
 from pathlib import Path
 
 from rich.progress import track
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.cmd.elapsed import ElapsedCommand
+from batch_processing.utils.utils import submit_job
 
 
 class BatchRunCommand(BaseCommand):
@@ -26,10 +26,6 @@ class BatchRunCommand(BaseCommand):
         for path in track(
             full_paths, description="Submitting batches", total=len(full_paths)
         ):
-            subprocess.run(
-                ["sbatch", path.as_posix()],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            submit_job(path.as_posix())
 
         ElapsedCommand(self._args).execute()

@@ -4,7 +4,7 @@
 
 #SBATCH -p $partition
 
-# SBATCH -o $log_file_path
+#SBATCH -o $log_file_path
 
 #SBATCH -N 1
 
