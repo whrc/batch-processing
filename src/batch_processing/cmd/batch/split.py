@@ -66,6 +66,7 @@ class BatchSplitCommand(BaseCommand):
             "log_file_path": self.log_path / f"batch-{index}",
             "log_level": self._args.log_level,
             "config_path": config_file,
+            "home": self.home_dir,
             "p": self._args.p,
             "e": self._args.e,
             "s": self._args.s,

@@ -10,6 +10,7 @@
 
 . /etc/profile.d/z00_lmod.sh
 
+cd $home
 git clone https://github.com/whrc/batch-processing.git
 cd batch-processing/
 pip install .
