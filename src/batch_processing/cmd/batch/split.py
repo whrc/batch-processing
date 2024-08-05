@@ -72,11 +72,6 @@ class BatchSplitCommand(BaseCommand):
             script_path.as_posix(), "slurm_runner.sh", substitution_values
         )
 
-    def _get_chunk_size(self, sliced_dir):
-        chunk_range = sliced_dir.split("-")[-1]
-        start, end = (int(val) for val in chunk_range.split("_"))
-        return end - start
-
     def _calculate_dimensions(self):
         INPUT_FILE = "run-mask.nc"
         input_path = Path(self._args.input_path)
@@ -124,7 +119,7 @@ class BatchSplitCommand(BaseCommand):
         file_name = "split_job.sh"
         substitution_values = {
             "job_name": job_name,
-            "partition": self._args.slurm_partition,
+            "partition": "process",
             "log_path": self.log_path / job_name,
             "p": self._args.p,
             "e": self._args.e,
@@ -155,7 +150,7 @@ class BatchSplitCommand(BaseCommand):
                 print("The split job is successfully submitted.")
                 print(stdout.strip())
             else:
-                print("Something went wrong when submitting the job")
+                print(f"Something went wrong when submitting the job: {stderr}")
 
             return
 
