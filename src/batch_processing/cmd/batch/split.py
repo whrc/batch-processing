@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -12,6 +13,7 @@ from batch_processing.utils.utils import (
     INPUT_FILES,
     create_slurm_script,
     get_dimensions,
+    interpret_path,
     render_slurm_job_script,
     submit_job,
     update_config,
@@ -26,12 +28,16 @@ SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util"
 class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
+        args.input_path = Path(interpret_path(args.input_path))
+
+        # todo: remove self._args and create class variables for every argument
         self._args = args
-        self.output_dir = Path(self.output_dir)
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
         self.log_path = Path(self.base_batch_dir, "logs")
 
         self.log_path.mkdir(exist_ok=True, parents=True)
+
+        self.input_path = args.input_path
 
     def _run_utils(self, batch_dir, batch_input_dir):
         # todo: instead of running this file, implement what this file does
@@ -72,36 +78,7 @@ class BatchSplitCommand(BaseCommand):
             script_path.as_posix(), "slurm_runner.sh", substitution_values
         )
 
-    def _calculate_dimensions(self):
-        INPUT_FILE = "run-mask.nc"
-        input_path = Path(self._args.input_path)
-        items = [item for item in input_path.iterdir()]
-
-        # unsliced, normal input dataset
-        if all([item.is_file() for item in items]):
-            X, Y = get_dimensions(input_path / INPUT_FILE)
-            return X, Y, False
-
-        if all([item.is_dir() for item in items]):
-            X = Y = 0
-            for item in items:
-                path = item / INPUT_FILE
-                temp_x, temp_y = get_dimensions(path)
-                X += temp_x
-                Y += temp_y
-
-            if X > Y:
-                X = X // len(items)
-            else:
-                Y = Y // len(items)
-
-            return X, Y, True
-
-        raise ValueError(
-            "The provided path to the input data contains malformed information. "
-            "Either check the path or fix the input data."
-        )
-
+    # todo: remove this
     def create_chunks(self, dim_size, chunk_count):
         """Create chunk boundaries for slicing the dataset."""
         chunks = []
@@ -126,7 +103,7 @@ class BatchSplitCommand(BaseCommand):
             "s": self._args.s,
             "t": self._args.t,
             "n": self._args.n,
-            "input_path": self._args.input_path,
+            "input_path": self.input_path.as_posix(),
             "batches": self._args.batches,
             "log_level": self._args.log_level,
         }
@@ -137,7 +114,7 @@ class BatchSplitCommand(BaseCommand):
         return result.stdout, result.stderr
 
     def execute(self):
-        X, Y, use_parallel = self._calculate_dimensions()
+        use_parallel = is_dataset_big(self.input_path)
 
         # The split operation is invoked. Launch a node to process
         # this operation.
@@ -154,6 +131,7 @@ class BatchSplitCommand(BaseCommand):
 
             return
 
+        X, Y = sum_dimensions(self.input_path)
         print("Dimension size of X:", X)
         print("Dimension size of Y:", Y)
 
@@ -165,7 +143,15 @@ class BatchSplitCommand(BaseCommand):
 
         print("Cleaning up the existing directories")
         if self.base_batch_dir.exists():
-            shutil.rmtree(self.base_batch_dir)
+            pattern = re.compile(r"^batch_\d+$")
+            to_be_removed = [
+                d
+                for d in self.base_batch_dir.iterdir()
+                if d.is_dir() and pattern.match(d.name)
+            ]
+
+            with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+                executor.map(lambda elem: shutil.rmtree(elem), to_be_removed)
 
         print("Set up batch directories")
         self.base_batch_dir.mkdir(exist_ok=True)
@@ -174,7 +160,7 @@ class BatchSplitCommand(BaseCommand):
             path = self.base_batch_dir / f"batch_{index}"
             BATCH_DIRS.append(path)
 
-            path = os.path.join(path, "input")
+            path = path / "input"
             BATCH_INPUT_DIRS.append(path)
 
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
@@ -183,14 +169,13 @@ class BatchSplitCommand(BaseCommand):
         print("Split input files")
         if use_parallel:
             tasks = []
-            sliced_dirs = os.listdir(self._args.input_path)
+            sliced_dirs = os.listdir(self.input_path.as_posix())
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
-                # todo: change this hard-coded value
-                chunks = self.create_chunks(185, os.cpu_count())
-                input_file_path = os.path.join(
-                    self._args.input_path, sliced_dir, input_file
-                )
+                temp_path = self.input_path / "run-mask.nc"
+                _, y = get_dimensions(temp_path.as_posix())
+                chunks = self.create_chunks(y, os.cpu_count())
+                input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
                 for start_chunk, end_chunk in chunks:
                     tasks.append(
                         (
@@ -205,7 +190,7 @@ class BatchSplitCommand(BaseCommand):
             with Pool(processes=os.cpu_count()) as pool:
                 pool.starmap(split_file_chunk, tasks)
         else:
-            split_file(0, DIMENSION_SIZE, self._args.input_path, SPLIT_DIMENSION)
+            split_file(0, DIMENSION_SIZE, self.input_path, SPLIT_DIMENSION)
 
         print("Set up the batch simulation")
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
@@ -253,9 +238,11 @@ def split_file_chunk(start_index, end_index, input_path, input_file, split_dimen
     print("done splitting ", input_file)
 
 
-def split_file(start_index, end_index, input_path, split_dimension):
+def split_file(
+    start_index: int, end_index: int, input_path: Path, split_dimension: str
+) -> None:
     for input_file in INPUT_FILES:
-        src_input_path = os.path.join(input_path, input_file)
+        src_input_path = input_path / input_file
         print("splitting ", src_input_path)
         for index in range(start_index, end_index):
             path = os.path.join(BATCH_INPUT_DIRS[index], input_file)
@@ -274,3 +261,66 @@ def split_file(start_index, end_index, input_path, split_dimension):
                     ]
                 )
         print("done splitting ", input_file)
+
+
+def is_dataset_big(input_path: Path) -> bool:
+    """Checks if the given input dataset is too big.
+
+    If the given directory contains folders, that means the dataset is enough
+    to use parallel processing. Otherwise, the dataset is small for parallel processing.
+
+    Args:
+        input_path (Path): Path to the input dataset
+
+    Raises:
+        ValueError: The given path contains both files and directories. It should only
+    contain either of those.
+
+    Returns:
+        bool: Whether the dataset is big or not
+
+    """
+    items = [item for item in input_path.iterdir()]
+    if all([item.is_file() for item in items]):
+        return False
+
+    if all([item.is_dir() for item in items]):
+        return True
+
+    raise ValueError(
+        "The provided path to the input data contains malformed information. "
+        "Either check the path or fix the input data."
+    )
+
+
+def sum_dimensions(input_path: Path) -> Union[int, int]:
+    """Sums the dimensions of the given path.
+
+    When the input dataset is too big, we store them in multiple chunks to process.
+    This functions walks into each of these chunks and calculates the sum of the
+    dimenions of the original dataset.
+
+    Args:
+        input_path (Path): Path to the input dataset
+
+    Returns:
+        int: The sum of X coordinates
+        int: The sum of Y coordinates
+    """
+    REFERENCE_INPUT_FILE = "run-mask.nc"
+    if not is_dataset_big(input_path):
+        return get_dimensions(input_path / REFERENCE_INPUT_FILE)
+    else:
+        items = [item for item in input_path.iterdir()]
+
+        # It is assumed that all of the input files will have
+        # the same dimensions. For that reason, one file is
+        # selected as a reference.
+        X = Y = 0
+        for item in items:
+            file_path = input_path / item / REFERENCE_INPUT_FILE
+            temp_x, temp_y = get_dimensions(file_path)
+            X += temp_x
+            Y += temp_y
+
+        return X, Y
