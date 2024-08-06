@@ -173,6 +173,9 @@ class BatchSplitCommand(BaseCommand):
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
                 input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
+                print("before", input_file_path)
+                input_file_path = os.path.join(self.input_path.as_posix(), sliced_dir, input_file)
+                print("after", input_file_path)
                 _, y = get_dimensions(input_file_path)
                 chunks = self.create_chunks(y, os.cpu_count())
                 for start_chunk, end_chunk in chunks:
