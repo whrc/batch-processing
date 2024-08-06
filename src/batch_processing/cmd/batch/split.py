@@ -186,6 +186,7 @@ class BatchSplitCommand(BaseCommand):
                         )
                     )
                 else:
+                    print(input_file_path)
                     _, y = get_dimensions(input_file_path)
                     chunks = self.create_chunks(y, os.cpu_count())
                     for start_chunk, end_chunk in chunks:

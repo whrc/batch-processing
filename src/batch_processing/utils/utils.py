@@ -9,13 +9,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 from subprocess import CompletedProcess
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import cftime
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from google.cloud import storage
+from netCDF4 import Dataset
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -367,11 +368,11 @@ def generate_random_string(N=5):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=N))
 
 
-def get_dimensions(file_name: str) -> Union[int, int]:
-    """Retrieve the dimensions sizes from the given NetCDF file."""
-    with xr.open_dataset(file_name) as dataset:
-        x = dataset.dims["X"]
-        y = dataset.dims["Y"]
+def get_dimensions(file_name: str) -> Tuple[int, int]:
+    """Retrieve the dimensions sizes from the given NetCDF file using netCDF4."""
+    with Dataset(file_name, 'r') as dataset:
+        x = dataset.dimensions['X'].size
+        y = dataset.dimensions['Y'].size
     return x, y
 
 
