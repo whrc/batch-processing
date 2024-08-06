@@ -10,7 +10,6 @@ from typing import List, Union
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
-    INPUT_FILES,
     create_slurm_script,
     get_dimensions,
     interpret_path,
@@ -20,6 +19,20 @@ from batch_processing.utils.utils import (
     write_text_file,
 )
 
+# todo: this list doesn't include co2.nc and projected-co2.c files
+# give a better name and refactor
+INPUT_FILES = [
+    "drainage.nc",
+    "fri-fire.nc",
+    "run-mask.nc",
+    "soil-texture.nc",
+    "topo.nc",
+    "vegetation.nc",
+    "historic-explicit-fire.nc",
+    "projected-explicit-fire.nc",
+    "projected-climate.nc",
+    "historic-climate.nc",
+]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
@@ -170,8 +183,9 @@ class BatchSplitCommand(BaseCommand):
         # them instead of splitting.
         print("Copy co2.nc and projected-co2.nc files")
         if use_parallel:
-            src_co2 = next(self.input_path.iterdir()) / "co2.nc"
-            src_projected_co2 = next(self.input_path.iterdir()) / "projected-co2.nc"
+            chunk_dir = next(self.input_path.iterdir())
+            src_co2 = chunk_dir / "co2.nc"
+            src_projected_co2 = chunk_dir / "projected-co2.nc"
             for batch_dir in BATCH_INPUT_DIRS:
                 dst_co2 = batch_dir / "co2.nc"
                 shutil.copy(src_co2, dst_co2)
