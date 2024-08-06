@@ -11,7 +11,6 @@ from typing import List, Union
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     INPUT_FILES,
-    INPUT_FILES_TO_COPY,
     create_slurm_script,
     get_dimensions,
     interpret_path,
@@ -167,6 +166,18 @@ class BatchSplitCommand(BaseCommand):
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda elem: os.makedirs(elem), BATCH_INPUT_DIRS)
 
+        # co2.nc and projected-co2.nc doesn't have X and Y dimensions. So, we copy
+        # them instead of splitting.
+        print("Copy co2.nc and projected-co2.nc files")
+        for batch_dir in BATCH_INPUT_DIRS:
+            src_co2 = self.input_path / "co2.nc"
+            dst_co2 = batch_dir / "co2.nc"
+            shutil.copy(src_co2, dst_co2)
+
+            src_projected_co2 = self.input_path / "projected-co2.nc"
+            dst_projected_co2 = batch_dir / "projected-co2.nc"
+            shutil.copy(src_projected_co2, dst_projected_co2)
+
         print("Split input files")
         if use_parallel:
             tasks = []
@@ -174,31 +185,18 @@ class BatchSplitCommand(BaseCommand):
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
                 input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
-                if input_file in INPUT_FILES_TO_COPY:
-                    # since we will copy these files, we don't need to slice them
+                _, y = get_dimensions(input_file_path)
+                chunks = self.create_chunks(y, os.cpu_count())
+                for start_chunk, end_chunk in chunks:
                     tasks.append(
                         (
-                            0,
-                            0,
+                            start_chunk,
+                            end_chunk,
                             input_file_path,
                             input_file,
                             SPLIT_DIMENSION,
                         )
                     )
-                else:
-                    print(input_file_path)
-                    _, y = get_dimensions(input_file_path)
-                    chunks = self.create_chunks(y, os.cpu_count())
-                    for start_chunk, end_chunk in chunks:
-                        tasks.append(
-                            (
-                                start_chunk,
-                                end_chunk,
-                                input_file_path,
-                                input_file,
-                                SPLIT_DIMENSION,
-                            )
-                        )
 
             with Pool(processes=os.cpu_count()) as pool:
                 pool.starmap(split_file_chunk, tasks)
@@ -233,20 +231,17 @@ def split_file_chunk(start_index, end_index, input_path, input_file, split_dimen
     chunk_start, chunk_end = (int(elem) for elem in intervals.split("_"))
     for index in range(start_index, end_index):
         path = os.path.join(BATCH_INPUT_DIRS[chunk_start + index], input_file)
-        if input_file in ["co2.nc", "projected-co2.nc"]:
-            shutil.copy(input_path, path)
-        else:
-            subprocess.run(
-                [
-                    "ncks",
-                    "-O",
-                    "-h",
-                    "-d",
-                    f"{split_dimension},{index}",
-                    input_path,
-                    path,
-                ]
-            )
+        subprocess.run(
+            [
+                "ncks",
+                "-O",
+                "-h",
+                "-d",
+                f"{split_dimension},{index}",
+                input_path,
+                path,
+            ]
+        )
 
     print("done splitting ", input_file)
 
@@ -259,20 +254,17 @@ def split_file(
         print("splitting ", src_input_path)
         for index in range(start_index, end_index):
             path = os.path.join(BATCH_INPUT_DIRS[index], input_file)
-            if input_file in ["co2.nc", "projected-co2.nc"]:
-                shutil.copy(src_input_path, path)
-            else:
-                subprocess.run(
-                    [
-                        "ncks",
-                        "-O",
-                        "-h",
-                        "-d",
-                        f"{split_dimension},{index}",
-                        src_input_path,
-                        path,
-                    ]
-                )
+            subprocess.run(
+                [
+                    "ncks",
+                    "-O",
+                    "-h",
+                    "-d",
+                    f"{split_dimension},{index}",
+                    src_input_path,
+                    path,
+                ]
+            )
         print("done splitting ", input_file)
 
 
