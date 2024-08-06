@@ -66,7 +66,6 @@ class BatchSplitCommand(BaseCommand):
             "log_file_path": self.log_path / f"batch-{index}",
             "log_level": self._args.log_level,
             "config_path": config_file,
-            "home": self.home_dir,
             "p": self._args.p,
             "e": self._args.e,
             "s": self._args.s,
@@ -173,10 +172,9 @@ class BatchSplitCommand(BaseCommand):
             sliced_dirs = os.listdir(self.input_path.as_posix())
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
-                temp_path = self.input_path / "run-mask.nc"
-                _, y = get_dimensions(temp_path.as_posix())
-                chunks = self.create_chunks(y, os.cpu_count())
                 input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
+                _, y = get_dimensions(input_file_path)
+                chunks = self.create_chunks(y, os.cpu_count())
                 for start_chunk, end_chunk in chunks:
                     tasks.append(
                         (
