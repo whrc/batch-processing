@@ -169,14 +169,24 @@ class BatchSplitCommand(BaseCommand):
         # co2.nc and projected-co2.nc doesn't have X and Y dimensions. So, we copy
         # them instead of splitting.
         print("Copy co2.nc and projected-co2.nc files")
-        for batch_dir in BATCH_INPUT_DIRS:
-            src_co2 = self.input_path / "co2.nc"
-            dst_co2 = batch_dir / "co2.nc"
-            shutil.copy(src_co2, dst_co2)
+        if use_parallel:
+            src_co2 = next(self.input_path.iterdir()) / "co2.nc"
+            src_projected_co2 = next(self.input_path.iterdir()) / "projected-co2.nc"
+            for batch_dir in BATCH_INPUT_DIRS:
+                dst_co2 = batch_dir / "co2.nc"
+                shutil.copy(src_co2, dst_co2)
 
-            src_projected_co2 = self.input_path / "projected-co2.nc"
-            dst_projected_co2 = batch_dir / "projected-co2.nc"
-            shutil.copy(src_projected_co2, dst_projected_co2)
+                dst_projected_co2 = batch_dir / "projected-co2.nc"
+                shutil.copy(src_projected_co2, dst_projected_co2)
+        else:
+            for batch_dir in BATCH_INPUT_DIRS:
+                src_co2 = self.input_path / "co2.nc"
+                dst_co2 = batch_dir / "co2.nc"
+                shutil.copy(src_co2, dst_co2)
+
+                src_projected_co2 = self.input_path / "projected-co2.nc"
+                dst_projected_co2 = batch_dir / "projected-co2.nc"
+                shutil.copy(src_projected_co2, dst_projected_co2)
 
         print("Split input files")
         if use_parallel:
