@@ -11,6 +11,7 @@ from typing import List, Union
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     INPUT_FILES,
+    INPUT_FILES_TO_COPY,
     create_slurm_script,
     get_dimensions,
     interpret_path,
@@ -173,21 +174,30 @@ class BatchSplitCommand(BaseCommand):
 
             for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
                 input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
-                print("before", input_file_path)
-                input_file_path = os.path.join(self.input_path.as_posix(), sliced_dir, input_file)
-                print("after", input_file_path)
-                _, y = get_dimensions(input_file_path)
-                chunks = self.create_chunks(y, os.cpu_count())
-                for start_chunk, end_chunk in chunks:
+                if input_file in INPUT_FILES_TO_COPY:
+                    # since we will copy these files, we don't need to slice them
                     tasks.append(
                         (
-                            start_chunk,
-                            end_chunk,
+                            0,
+                            0,
                             input_file_path,
                             input_file,
                             SPLIT_DIMENSION,
                         )
                     )
+                else:
+                    _, y = get_dimensions(input_file_path)
+                    chunks = self.create_chunks(y, os.cpu_count())
+                    for start_chunk, end_chunk in chunks:
+                        tasks.append(
+                            (
+                                start_chunk,
+                                end_chunk,
+                                input_file_path,
+                                input_file,
+                                SPLIT_DIMENSION,
+                            )
+                        )
 
             with Pool(processes=os.cpu_count()) as pool:
                 pool.starmap(split_file_chunk, tasks)
