@@ -5,6 +5,7 @@ import lazy_import
 
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
+MapCommand = lazy_import.lazy_class("batch_processing.cmd.map.MapCommand")
 MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
 RunCheckCommand = lazy_import.lazy_class(
     "batch_processing.cmd.run_check.RunCheckCommand"
@@ -248,6 +249,12 @@ def main():
         ),
     )
     parser_monitoring.set_defaults(func=lambda args: MonitorCommand(args).execute())
+
+    parser_map = subparsers.add_parser("map", help="Maps the given path's status.")
+
+    add_batch_path_argument(parser_map)
+
+    parser_map.set_defaults(func=lambda args: MapCommand(args).execute())
 
     parser_init = subparsers.add_parser(
         "init", help="Initialize the environment for running the simulation"
