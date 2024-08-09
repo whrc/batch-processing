@@ -73,7 +73,7 @@ class BatchSplitCommand(BaseCommand):
         update_config(path=config_file.as_posix(), prefix_value=batch_dir)
 
         substitution_values = {
-            "job_name": f"batch-{index}",
+            "job_name": f"{self.base_batch_dir.name}-batch-{index}",
             "partition": self._args.slurm_partition,
             "dvmdostem_binary": self.dvmdostem_bin_path,
             "log_file_path": self.log_path / f"batch-{index}",
