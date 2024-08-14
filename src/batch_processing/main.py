@@ -4,12 +4,7 @@ import textwrap
 import lazy_import
 
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
-InputCommand = lazy_import.lazy_class("batch_processing.cmd.input.InputCommand")
 MapCommand = lazy_import.lazy_class("batch_processing.cmd.map.MapCommand")
-MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
-RunCheckCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.run_check.RunCheckCommand"
-)
 ExtractCellCommand = lazy_import.lazy_class(
     "batch_processing.cmd.extract_cell.ExtractCellCommand"
 )
@@ -28,15 +23,6 @@ BatchMergeCommand = lazy_import.lazy_class(
 )
 BatchPostprocessCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
-)
-BatchLegacySplitCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.legacy_split.BatchLegacySplitCommand"
-)
-BatchLegacyRunCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.legacy_run.BatchLegacyRunCommand"
-)
-BatchLegacyMergeCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.batch.legacy_merge.BatchLegacyMergeCommand"
 )
 
 
@@ -184,72 +170,6 @@ def main():
         func=lambda args: BatchPostprocessCommand(args).execute()
     )
 
-    parser_batch_legacy_split = batch_subparsers.add_parser(
-        "legacy_split",
-        help=(
-            "Split the input data into different batches. "
-            "Note that this command removes the existing batches."
-        ),
-    )
-    parser_batch_legacy_split.add_argument(
-        "-c", "--cells-per-batch", type=int, help="The number of cells per batch"
-    )
-    parser_batch_legacy_split.add_argument(
-        "-sp",
-        "--slurm-partition",
-        choices=["spot", "compute"],
-        default="spot",
-        help="Specificy the Slurm partition. By default, spot",
-    )
-
-    add_common_dvmdostem_arguments(parser_batch_legacy_split)
-
-    parser_batch_legacy_split.set_defaults(
-        func=lambda args: BatchLegacySplitCommand(args).execute()
-    )
-
-    parser_batch_legacy_run = batch_subparsers.add_parser(
-        "legacy_run", help="Submit the batches to the Slurm queue"
-    )
-    parser_batch_legacy_run.set_defaults(
-        func=lambda args: BatchLegacyRunCommand(args).execute()
-    )
-
-    parser_batch_legacy_merge = batch_subparsers.add_parser(
-        "legacy_merge", help="Merge the completed batches"
-    )
-    parser_batch_legacy_merge.add_argument(
-        "-v", "--vars", nargs="+", default=[], help="Merge only the given variables"
-    )
-    parser_batch_legacy_merge.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        help="Continue merging even if not all cells ran successfully.",
-    )
-    parser_batch_legacy_merge.set_defaults(
-        func=lambda args: BatchLegacyMergeCommand(args).execute()
-    )
-
-    parser_monitoring = subparsers.add_parser(
-        "monitor",
-        help=(
-            "Monitor the batches and if there is an unfinished job,"
-            "it resubmits that."
-        ),
-    )
-    parser_monitoring.add_argument(
-        "-c",
-        "--instance-count",
-        type=int,
-        required=True,
-        help=(
-            "The maximum amount of available machines in the cluster."
-            "It can be found by 'sinfo' command"
-        ),
-    )
-    parser_monitoring.set_defaults(func=lambda args: MonitorCommand(args).execute())
-
     parser_map = subparsers.add_parser("map", help="Maps the given path's status.")
 
     add_batch_path_argument(parser_map)
@@ -260,24 +180,6 @@ def main():
         "init", help="Initialize the environment for running the simulation"
     )
     parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
-
-    parser_input = subparsers.add_parser(
-        "input", help="Modify config.js file according to the provided input path"
-    )
-
-    parser_input.add_argument(
-        "-i",
-        "--input-path",
-        required=True,
-        help=(
-            "Path to the directory that contains the input files."
-            "Example: $HOME/input/four-basins"
-        ),
-    )
-    parser_input.set_defaults(func=lambda args: InputCommand(args).execute())
-
-    parser_run_check = subparsers.add_parser("run_check", help="todo")
-    parser_run_check.set_defaults(func=lambda args: RunCheckCommand(args).execute())
 
     parser_extract = subparsers.add_parser(
         "extract_cell", help="Extracts a single cell and creates a batch"
