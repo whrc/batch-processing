@@ -108,6 +108,9 @@ def main():
     parser.add_argument(
         "-h", "--help", action="store_true", help="Show this help message and exit"
     )
+    parser.add_argument(
+        "-v", "--version", action="version", version="%(prog)s 1.1.0"
+    )
 
     subparsers = parser.add_subparsers(title="Available commands", metavar="")
 
