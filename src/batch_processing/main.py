@@ -4,14 +4,6 @@ import textwrap
 import lazy_import
 
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
-MapCommand = lazy_import.lazy_class("batch_processing.cmd.map.MapCommand")
-ExtractCellCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.extract_cell.ExtractCellCommand"
-)
-DiffCommand = lazy_import.lazy_class("batch_processing.cmd.diff.DiffCommand")
-SliceInputCommand = lazy_import.lazy_class(
-    "batch_processing.cmd.slice_input.SliceInputCommand"
-)
 BatchSplitCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.split.BatchSplitCommand"
 )
@@ -23,6 +15,14 @@ BatchMergeCommand = lazy_import.lazy_class(
 )
 BatchPostprocessCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
+)
+DiffCommand = lazy_import.lazy_class("batch_processing.cmd.diff.DiffCommand")
+ExtractCellCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.extract_cell.ExtractCellCommand"
+)
+MapCommand = lazy_import.lazy_class("batch_processing.cmd.map.MapCommand")
+SliceInputCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.slice_input.SliceInputCommand"
 )
 
 
@@ -97,6 +97,11 @@ def main():
 
     subparsers = parser.add_subparsers(title="Available commands", metavar="")
 
+    parser_init = subparsers.add_parser(
+        "init", help="Initialize the environment for running the simulation"
+    )
+    parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
+
     parser_batch = subparsers.add_parser(
         "batch",
         help="Batch related operations",
@@ -170,16 +175,15 @@ def main():
         func=lambda args: BatchPostprocessCommand(args).execute()
     )
 
-    parser_map = subparsers.add_parser("map", help="Maps the given path's status.")
-
-    add_batch_path_argument(parser_map)
-
-    parser_map.set_defaults(func=lambda args: MapCommand(args).execute())
-
-    parser_init = subparsers.add_parser(
-        "init", help="Initialize the environment for running the simulation"
+    parser_diff = subparsers.add_parser(
+        "diff",
+        help="Compare the NetCDF files in the given directories. "
+        "The given two directories must contain the same files.",
     )
-    parser_init.set_defaults(func=lambda args: InitCommand(args).execute())
+
+    parser_diff.add_argument("path_one")
+    parser_diff.add_argument("path_two")
+    parser_diff.set_defaults(func=lambda args: DiffCommand(args).execute())
 
     parser_extract = subparsers.add_parser(
         "extract_cell", help="Extracts a single cell and creates a batch"
@@ -208,19 +212,15 @@ def main():
 
     parser_extract.set_defaults(func=lambda args: ExtractCellCommand(args).execute())
 
-    parser_diff = subparsers.add_parser(
-        "diff",
-        help="Compare the NetCDF files in the given directories. "
-        "The given two directories must contain the same files.",
-    )
+    parser_map = subparsers.add_parser("map", help="Maps the given path's status.")
 
-    parser_diff.add_argument("path_one")
-    parser_diff.add_argument("path_two")
-    parser_diff.set_defaults(func=lambda args: DiffCommand(args).execute())
+    add_batch_path_argument(parser_map)
+
+    parser_map.set_defaults(func=lambda args: MapCommand(args).execute())
 
     parser_slice_input = subparsers.add_parser(
         "slice_input",
-        help="Slices the given input data into smaller folders. "
+        help="Slices the given input data into 10 smaller folders. "
         "To use this command, the given input has to have at least 500,000 cells.",
     )
 
