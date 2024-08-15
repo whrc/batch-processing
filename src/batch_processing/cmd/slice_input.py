@@ -13,7 +13,7 @@ from batch_processing.utils.utils import (
     INPUT_FILES_TO_COPY,
     Chunk,
     create_chunks,
-    get_dimension_sizes,
+    get_dimensions,
     interpret_path,
     render_slurm_job_script,
 )
@@ -70,7 +70,7 @@ class SliceInputCommand(BaseCommand):
             int: Cell count in the Y dimension. If the minimum cell count is not
                 satisfied, 0 is returned.
         """
-        X, Y = get_dimension_sizes(input_file_path)
+        X, Y = get_dimensions(input_file_path)
 
         current_cell_count = X * Y
         if current_cell_count < MIN_CELL_COUNT:
