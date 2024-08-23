@@ -8,71 +8,109 @@ In this document, it is assumed that the HPC cluster is already up and running a
 ## How to Install
 
 It already comes pre-installed to the Slurm login node.
-However, if you want to customize it, first delete the existing program and follow the below steps:
+You can verify if it's installed by:
 
 ```bash
-git clone https://github.com/whrc/batch-processing.git
-cd batch-processing/
-python3.9 -m pip install .
+bp --version
+```
+
+If you want to customize the program, make changes to it and install it like any other pip package:
+
+```bash
+pip install <path-to-custom-bp>
 ```
 
 ## How to Use
 
-```
-usage: bp [-h]  ...
+All of the available commands are:
 
-bp (or batch-processing) is a specialized internal tool designed for
-scientists at the Woodwell Climate Research Center.
+* [init](#init)
+* [batch split](#batch-split)
+* [batch run](#batch-run)
+* [batch merge](#batch-merge)
+* [map](#map)
+* [diff](#diff)
+* [extract_cell](#extract_cell)
+* [slice_input](#slice_input)
 
-Optimized for execution in the GCP (Google Cloud Platform) cluster,
-this tool streamlines the process of setting up and managing Slurm-based
-computational environments. It simplifies tasks such as configuring run
-parameters, partitioning input data into manageable batches, and executing
-these batches efficiently.
+### init
 
-Its primary aim is to enhance productivity and reduce manual setup
-overhead in complex data processing workflows, specifically tailored
-to the needs of climate research and analysis.
+The first command should be run before running any other commands.
+It copies [dvm-dos-tem model](https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem) from a GCP bucket and sets up the file system.
+It doesn't take any argument.
 
-optional arguments:
-  -h, --help  Show this help message and exit
-
-Available commands:
-
-    batch     Slice, run and merge batches
-    monitor   Monitors the batches and if there is an unfinished job,it resubmits that.
-    init      Initialize the environment for running the simulation
-    input     Modify config.js file according to the provided input path
-    elapsed   Measures the total elapsed time for running a dataset
-
-Use bp <command> --help for detailed help.
+```bash
+bp init
 ```
 
-A typical workflow would look like this:
+### batch split
 
-1) Initialize the environment: `bp init`.
+Splits the given input set into columns for faster processing.
+It takes the following arguments:
 
-2) Configure the dvmdostem: `bp input -i <path-to-input-data>`
+* `-i/--input-path`: Relative or absolute path to the input files. Required.
+* `-b/--batches`: Path to store the split batches. Note that the given value will be concatenated with `/mnt/exacloud/$USER`. Required.
+* `-sp/--slurm-partition`: Name of the slurm partition. Optional, by default `spot`.
+* `-p`: Number of pre-run years to run. Optional, by default `0`.
+* `-e`: Number of equilibrium years to run. Optional, by default `0`.
+* `-s`: Number of spin-up years to run. Optional, by default `0`.
+* `-t`: Number of transient years to run. Optional, by default `0`.
+* `-n`: Number of scenario years to run. Optional, by default `0`.
+* `-l/--log-level`: Level of logging. Optional, by default `disabled`.
 
-All input data is pre-loaded and resides in `/mnt/exacloud` with the name `dvmdostem-inputs`.
-You have to provide a full path to the input data while running this command.
+If `bp batch split -i /mnt/exacloud/dvmdostem-input/my-big-input-dataset -b first-run -p 100 -e 1000 -s 85 -t 115 -n 85 --log-level warn` command is run, you should be able to see your batch folders in `/mnt/exacloud/$USER/first-run` where `$USER` is the username of the current logged in user.
+You can check `slurm_runner.sh` to see the details of the job.
 
-Example usage:
+### batch run
 
-`bp input -i /mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_mri-cgcm3_Toolik_50x50`
+Submits all of the jobs to Slurm in the given batch folder.
+It takes one argument:
 
-3) Split the input data into separate batches: `bp batch split -c <cells-per-batch> -p <pre-run-years> -e <equilibrium-years> -s <spin-up-years> -t <transient-years> -n <scenario-years>`
-You can learn the details via `bp batch split --help`
+* `-b/--batches`: Path that stores job folders.
 
-Example usage:
+Assuming `bp batch split` is run with `-b first-run`, running `bp batch run -b first-run` submits all the jobs in that folder to the Slurm controller.
 
-`bp batch split -c 10 -p 100 -e 2000 -s 50 -t 20 -n 100`
+### batch merge
 
-4) Submit the batches to Slurm: `bp batch run`
+Combines the results of all batches.
+It should be run after all jobs are finished.
+It takes one argument:
 
-5) Start monitoring to recover the preempted machines: `bp monitor`
+* `-b/--batches`: Path that stores job folders.
 
-6) (**Optional**) Measure the elapsed time to run the simulation: `bp elapsed`
+Assuming `bp batch merge -b first-run` is run, it looks for the `/mnt/exacloud/$USER/first-run` folder, gathers the results, and puts them into `all-merged` folder in the batch folder, ie. `/mnt/exacloud/$USER/first-run`.
+
+### map
+
+Plots the status of a run by checking individual cell statuses and puts cells that have not succeeded in a text file for further reference.
+It takes one argument:
+
+* `-b/--batches`: Path that stores job folders.
+
+When `bp map -b first-run` is run, it creates `run_status_visualization.png` and `failed_cell_coords.txt` in `/mnt/exacloud/$USER/first-run`.
+These files can be copied to a local environment or a bucket using [`gcloud`](https://cloud.google.com/sdk/gcloud) or [`gsutil`](https://cloud.google.com/storage/docs/gsutil) tools.
+
+### diff
+
+Compares the NetCDF files in the given two directories.
+It takes two positional arguments:
+
+* todo
+
+### extract_cell
+
+Extracts a single cell from the given input set.
+It takes the following arguments:
+
+* todo
+
+### slice_input
+
+Slices the given big input set into 10 smaller pieces by spawning a `process` node in the cluster.
+It works with input sets that have more than 500,000 cells.
+It takes the following arguments:
+
+* todo
 
 
 ## Contributing
