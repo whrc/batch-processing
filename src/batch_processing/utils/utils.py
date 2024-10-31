@@ -3,6 +3,7 @@ import json
 import os
 import random
 import re
+import gcsfs
 import string
 import subprocess
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from string import Template
 from subprocess import CompletedProcess
 from typing import List, Tuple, Union
 
+from dask_jobqueue import SLURMCluster
 import cftime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -550,3 +552,11 @@ def create_slurm_script(
     """
     slurm_runner = render_slurm_job_script(template_name, substitution_values)
     write_text_file(path, slurm_runner)
+
+
+def get_gcsfs():
+    return gcsfs.GCSFileSystem(project="spherical-berm-323321", token=None)
+
+
+def get_cluster(n_workers, walltime="06:00:00"):
+    return SLURMCluster(queue="dask", n_workers=n_workers, interface="ens4", cores=4, memory="30GB", log_directory="/home/dteber_woodwellclimate_org/slurm", python="/opt/apps/.venv/bin/python", walltime=walltime)
