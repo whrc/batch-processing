@@ -155,6 +155,14 @@ def main():
 
     parser_batch_merge = batch_subparsers.add_parser("merge", help="Merge the batches")
 
+    parser_batch_merge.add_argument(
+        "--bucket-path",
+        help=(
+            "Bucket path to write the results into. "
+            "Required when the total cell size is greater than 40,000."
+        )
+    )
+
     add_batch_path_argument(parser_batch_merge)
 
     parser_batch_merge.set_defaults(func=lambda args: BatchMergeCommand(args).execute())
