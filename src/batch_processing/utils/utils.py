@@ -361,6 +361,9 @@ def get_project_root() -> Path:
 
 def interpret_path(path: str) -> str:
     """Converts any given relative path to an absolute path."""
+    if path.startswith("gcs://"):
+        return path
+
     path = os.path.expanduser(path)
 
     return os.path.abspath(path)
@@ -565,7 +568,7 @@ def get_cluster(n_workers, walltime="06:00:00"):
         interface="ens4",
         cores=4,
         memory="30GB",
-        log_directory="/mnt/exacloud/slurm_logs",
-        python="/usr/bin/python",
+        log_directory=f"{os.getenv('HOME')}/slurm_logs",
+        python="/usr/bin/python3",
         walltime=walltime,
     )
