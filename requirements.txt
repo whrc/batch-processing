@@ -9,3 +9,8 @@ rich==13.7.1
 cftime==1.6.3
 matplotlib==3.7.5
 xarray==2023.1.0
+zarr==2.16.1
+dask==2023.5.0
+dask-jobqueue==0.8.5
+gcsfs==2024.10.0
+h5netcdf==1.1.0
