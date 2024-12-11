@@ -372,9 +372,9 @@ def generate_random_string(N=5):
 
 def get_dimensions(file_name: str) -> Tuple[int, int]:
     """Retrieve the dimensions sizes from the given NetCDF file using netCDF4."""
-    with Dataset(file_name, 'r') as dataset:
-        x = dataset.dimensions['X'].size
-        y = dataset.dimensions['Y'].size
+    with Dataset(file_name, "r") as dataset:
+        x = dataset.dimensions["X"].size
+        y = dataset.dimensions["Y"].size
     return x, y
 
 
@@ -559,4 +559,13 @@ def get_gcsfs():
 
 
 def get_cluster(n_workers, walltime="06:00:00"):
-    return SLURMCluster(queue="dask", n_workers=n_workers, interface="ens4", cores=4, memory="30GB", log_directory="/home/dteber_woodwellclimate_org/slurm", python="/opt/apps/.venv/bin/python", walltime=walltime)
+    return SLURMCluster(
+        queue="dask",
+        n_workers=n_workers,
+        interface="ens4",
+        cores=4,
+        memory="30GB",
+        log_directory="/mnt/exacloud/slurm_logs",
+        python="/usr/bin/python",
+        walltime=walltime,
+    )

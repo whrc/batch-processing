@@ -118,11 +118,9 @@ class BatchMergeCommand(BaseCommand):
             # remove the intermediary files
             _ = [file.unlink() for file in all_files]
 
-    # it took 50 minutes to merge this dataset
     def _merge(self, output_file, bucket_path):
         fs = get_gcsfs()
         path = self.base_batch_dir / "batch_*" / "output" / output_file
-        # path = f"{self.base_batch_dir}/batch_*/output/{output_file}"
         files = sorted(glob.glob(path.as_posix()), key=get_batch_number)
         print(f"Reading {output_file}")
         ds = xr.open_mfdataset(files, engine="h5netcdf", combine="nested", concat_dim="y", parallel=True, data_vars="minimal", coords="minimal", compat="override", decode_cf=False, decode_times=False)
@@ -131,7 +129,6 @@ class BatchMergeCommand(BaseCommand):
         else:
             ds = ds.chunk({"time": -1, "x": "auto", "y": "auto"})
 
-        # gcsmap = gcsfs.mapping.GCSMap(f"gcp-slurm/reference_data/iem/merged/{output_file[:len(output_file)-3]}.zarr", gcs=fs, check=False, create=True)
         gcsmap = gcsfs.mapping.GCSMap(f"{bucket_path}/{output_file[:len(output_file)-3]}.zarr", gcs=fs, check=False, create=True)
         delayed_obj = ds.to_zarr(gcsmap, mode="w", compute=False)
         return delayed_obj
@@ -154,9 +151,6 @@ class BatchMergeCommand(BaseCommand):
         cluster.close()
 
     def execute(self):
-        import ipdb
-
-        ipdb.set_trace()
         file_path = self.base_batch_dir / "batch_0" / "output" / "run_status.nc"
         print(f"File path: {file_path}")
         x, y = get_dimensions(file_path)
