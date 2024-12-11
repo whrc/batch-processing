@@ -3,6 +3,7 @@ import json
 import os
 import random
 import re
+import gcsfs
 import string
 import subprocess
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from string import Template
 from subprocess import CompletedProcess
 from typing import List, Tuple, Union
 
+from dask_jobqueue import SLURMCluster
 import cftime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -370,9 +372,9 @@ def generate_random_string(N=5):
 
 def get_dimensions(file_name: str) -> Tuple[int, int]:
     """Retrieve the dimensions sizes from the given NetCDF file using netCDF4."""
-    with Dataset(file_name, 'r') as dataset:
-        x = dataset.dimensions['X'].size
-        y = dataset.dimensions['Y'].size
+    with Dataset(file_name, "r") as dataset:
+        x = dataset.dimensions["X"].size
+        y = dataset.dimensions["Y"].size
     return x, y
 
 
@@ -550,3 +552,20 @@ def create_slurm_script(
     """
     slurm_runner = render_slurm_job_script(template_name, substitution_values)
     write_text_file(path, slurm_runner)
+
+
+def get_gcsfs():
+    return gcsfs.GCSFileSystem(project="spherical-berm-323321", token=None)
+
+
+def get_cluster(n_workers, walltime="06:00:00"):
+    return SLURMCluster(
+        queue="dask",
+        n_workers=n_workers,
+        interface="ens4",
+        cores=4,
+        memory="30GB",
+        log_directory="/mnt/exacloud/slurm_logs",
+        python="/usr/bin/python",
+        walltime=walltime,
+    )
