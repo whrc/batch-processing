@@ -129,7 +129,12 @@ def main():
         "--input-path",
         required=True,
         help=(
-            "Path to the directory that contains the input files. " "Example: ",
+            "Remote or local path to the directory that contains the input files. ",
+            "If remote, prefix the path with 'gcs:// '"
+            "Remote path example: ",
+            "gcs://my-bucket/my-site",
+            "\n",
+            "Local path example: ",
             "/mnt/exacloud/dvmdostem-inputs/cru-ts40_ar5_rcp85_ncar-ccsm4_Toolik_50x50",
         ),
     )

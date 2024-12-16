@@ -1,26 +1,26 @@
+import dask
 import os
 import re
 import shutil
 import subprocess
+import dask.distributed
+import xarray as xr
 from concurrent.futures import ThreadPoolExecutor
-from itertools import product
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Union
+from typing import List
 
 from batch_processing.cmd.base import BaseCommand
 from batch_processing.utils.utils import (
     create_slurm_script,
-    get_dimensions,
     interpret_path,
-    render_slurm_job_script,
-    submit_job,
     update_config,
-    write_text_file,
+    get_gcsfs,
+    get_cluster,
 )
 
-# todo: this list doesn't include co2.nc and projected-co2.c files
-# give a better name and refactor
+# todo: this list doesn't include co2.nc and projected-co2.c files
+# give a better name and refactor
 INPUT_FILES = [
     "drainage.nc",
     "fri-fire.nc",
@@ -33,6 +33,18 @@ INPUT_FILES = [
     "projected-climate.nc",
     "historic-climate.nc",
 ]
+INPUT_FILES_TO_SPLIT = [
+    "drainage.zarr",
+    "fri-fire.zarr",
+    "run-mask.zarr",
+    "soil-texture.zarr",
+    "topo.zarr",
+    "vegetation.zarr",
+    "historic-explicit-fire.zarr",
+    "projected-explicit-fire.zarr",
+    "projected-climate.zarr",
+    "historic-climate.zarr",
+]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
 SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util")
@@ -41,8 +53,6 @@ SETUP_SCRIPTS_PATH = os.path.join(os.environ["HOME"], "dvm-dos-tem/scripts/util"
 class BatchSplitCommand(BaseCommand):
     def __init__(self, args):
         super().__init__()
-        args.input_path = Path(interpret_path(args.input_path))
-
         # todo: remove self._args and create class variables for every argument
         self._args = args
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
@@ -91,68 +101,110 @@ class BatchSplitCommand(BaseCommand):
             script_path.as_posix(), "slurm_runner.sh", substitution_values
         )
 
-    # todo: remove this
-    def create_chunks(self, dim_size, chunk_count):
-        """Create chunk boundaries for slicing the dataset."""
-        chunks = []
-        chunk_size = dim_size // chunk_count
-        remainder = dim_size % chunk_count
+    def _split_with_nco(
+        self, start_index: int, end_index: int, input_path: Path, split_dimension: str
+    ) -> None:
+        for input_file in INPUT_FILES:
+            src_input_path = input_path / input_file
+            print("splitting ", src_input_path)
+            for index in range(start_index, end_index):
+                path = os.path.join(BATCH_INPUT_DIRS[index], input_file)
+                subprocess.run(
+                    [
+                        "ncks",
+                        "-O",
+                        "-h",
+                        "-d",
+                        f"{split_dimension},{index}",
+                        src_input_path,
+                        path,
+                    ]
+                )
+            print("done splitting ", input_file)
 
-        for i in range(chunk_count):
-            start = i * chunk_size + min(i, remainder)
-            end = start + chunk_size + (1 if i < remainder else 0)
-            chunks.append((start, end))
+    def _split_with_dask(self, bucket_path):
+        cluster = get_cluster(n_workers=100)
+        client = dask.distributed.Client(cluster)
+        client.wait_for_workers(50)
+        print(f"Dashboard link: {client.dashboard_link}")
+        fs = get_gcsfs()
+        for input_file in INPUT_FILES_TO_SPLIT:
+            print(f"Processing {input_file}")
+            bucket_mapping = fs.get_mapper(
+                os.path.join(bucket_path, input_file), check=True
+            )
+            ds = xr.open_zarr(bucket_mapping, decode_times=False)
+            if input_file in [
+                "historic-climate.zarr",
+                "historic-explicit-fire.zarr",
+                "projected-climate.zarr",
+                "projected-explicit-fire.zarr",
+            ]:
+                chunk_dict = {"Y": 1, "X": -1, "time": -1}
+            else:
+                chunk_dict = {"Y": 1, "X": -1}
 
-        return chunks
+            ds = ds.chunk(chunk_dict)
+            y_dim = ds.Y.size
 
-    def _spawn_split_job(self, job_name: str = "split_job") -> Union[str, str]:
-        file_name = "split_job.sh"
-        substitution_values = {
-            "job_name": job_name,
-            "partition": "process",
-            "log_path": self.log_path / job_name,
-            "p": self._args.p,
-            "e": self._args.e,
-            "s": self._args.s,
-            "t": self._args.t,
-            "n": self._args.n,
-            "input_path": self.input_path.as_posix(),
-            "batches": self._args.batches,
-            "log_level": self._args.log_level,
-        }
-        job_script = render_slurm_job_script(file_name, substitution_values)
-        write_text_file(self.base_batch_dir / file_name, job_script)
+            # I know this is ugly but passing `ds` as an argument makes things painfully slow
+            @dask.delayed
+            def _process_data(col_index, output_path):
+                subset = ds.isel({"Y": col_index}).expand_dims("Y")
+                obj = subset.to_netcdf(output_path, engine="h5netcdf")
+                return obj
 
-        result = submit_job(self.base_batch_dir / file_name)
-        return result.stdout, result.stderr
+            delayed_objs = [
+                _process_data(
+                    i,
+                    os.path.join(
+                        self.base_batch_dir,
+                        f"batch_{i}",
+                        "input",
+                        f"{input_file[:len(input_file)-5]}.nc",
+                    ),
+                )
+                for i in range(y_dim)
+            ]
+            batch_size = 125
+            for i in range(0, y_dim, batch_size):
+                print(f"Computing batch number {(i // batch_size) + 1}")
+                batch = delayed_objs[i : i + batch_size]
+                dask.compute(*batch)
+
+            ds.close()
+
+        cluster.close()
 
     def execute(self):
-        use_parallel = is_dataset_big(self.input_path)
+        reading_remote_data = False
+        if self.input_path.startswith("gcs://"):
+            self.input_path = self.input_path.replace("gcs://", "")
+            reading_remote_data = True
+        else:
+            self.input_path = Path(interpret_path(self.input_path))
 
-        # The split operation is invoked. Launch a node to process
-        # this operation.
-        #
-        # We enter into this statement when the provided input set
-        # is too big. So, a node that has multiple CPUs is spawned.
-        if use_parallel and not self._args.launch_as_job:
-            stdout, stderr = self._spawn_split_job()
-            if stderr == "":
-                print("The split job is successfully submitted.")
-                print(stdout.strip())
-            else:
-                print(f"Something went wrong when submitting the job: {stderr}")
+        fs = get_gcsfs()
 
-            return
+        if reading_remote_data:
+            path = fs.get_mapper(
+                os.path.join(self.input_path, "run-mask.zarr"), check=True
+            )
+            ds = xr.open_zarr(path)
+        else:
+            ds = xr.open_dataset(self.input_path / "run-mask.nc", engine="h5netcdf")
 
-        X, Y = sum_dimensions(self.input_path)
+        X, Y = ds.X.size, ds.Y.size
         print("Dimension size of X:", X)
         print("Dimension size of Y:", Y)
 
-        # Choose the dimension to split along
-        SPLIT_DIMENSION, DIMENSION_SIZE = ("X", X) if Y > X else ("Y", Y)
+        # always split across y dimension
+        SPLIT_DIMENSION, DIMENSION_SIZE = "Y", Y
 
         print(f"\nSplitting accros {SPLIT_DIMENSION} dimension")
         print("Dimension size:", DIMENSION_SIZE)
+
+        ds.close()
 
         print("Cleaning up the existing directories")
         if self.base_batch_dir.exists():
@@ -179,53 +231,47 @@ class BatchSplitCommand(BaseCommand):
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda elem: os.makedirs(elem), BATCH_INPUT_DIRS)
 
-        # co2.nc and projected-co2.nc doesn't have X and Y dimensions. So, we copy
+        co2_files = ["co2.zarr/", "projected-co2.zarr/"]
+        if reading_remote_data:
+            for co2_file in co2_files:
+                src = os.path.join(self.input_path, co2_file)
+                dst = os.path.join(self.base_batch_dir, co2_file)
+                fs.get(src, dst, recursive=True)
+
+                ds = xr.open_zarr(dst)
+                co2_file = Path(co2_file)
+                ds.to_netcdf(
+                    os.path.join(self.base_batch_dir, f"{co2_file.stem}.nc"),
+                    engine="h5netcdf",
+                )
+                ds.close()
+                shutil.rmtree(dst)
+
+        # co2.nc and projected-co2.nc doesn't have X and Y dimensions. So, we copy
         # them instead of splitting.
         print("Copy co2.nc and projected-co2.nc files")
-        if use_parallel:
-            chunk_dir = next(self.input_path.iterdir())
-            src_co2 = chunk_dir / "co2.nc"
-            src_projected_co2 = chunk_dir / "projected-co2.nc"
-            for batch_dir in BATCH_INPUT_DIRS:
-                dst_co2 = batch_dir / "co2.nc"
-                shutil.copy(src_co2, dst_co2)
+        co2_dest = self.input_path
+        if reading_remote_data:
+            co2_dest = self.base_batch_dir
 
-                dst_projected_co2 = batch_dir / "projected-co2.nc"
-                shutil.copy(src_projected_co2, dst_projected_co2)
-        else:
-            for batch_dir in BATCH_INPUT_DIRS:
-                src_co2 = self.input_path / "co2.nc"
-                dst_co2 = batch_dir / "co2.nc"
-                shutil.copy(src_co2, dst_co2)
+        for batch_dir in BATCH_INPUT_DIRS:
+            src_co2 = co2_dest / "co2.nc"
+            dst_co2 = batch_dir / "co2.nc"
+            shutil.copy(src_co2, dst_co2)
 
-                src_projected_co2 = self.input_path / "projected-co2.nc"
-                dst_projected_co2 = batch_dir / "projected-co2.nc"
-                shutil.copy(src_projected_co2, dst_projected_co2)
+            src_projected_co2 = co2_dest / "projected-co2.nc"
+            dst_projected_co2 = batch_dir / "projected-co2.nc"
+            shutil.copy(src_projected_co2, dst_projected_co2)
+
+        if reading_remote_data:
+            os.remove(os.path.join(co2_dest, "co2.nc"))
+            os.remove(os.path.join(co2_dest, "projected-co2.nc"))
 
         print("Split input files")
-        if use_parallel:
-            tasks = []
-            sliced_dirs = os.listdir(self.input_path.as_posix())
-
-            for sliced_dir, input_file in product(sliced_dirs, INPUT_FILES):
-                input_file_path = os.path.join(self.input_path, sliced_dir, input_file)
-                _, y = get_dimensions(input_file_path)
-                chunks = self.create_chunks(y, os.cpu_count())
-                for start_chunk, end_chunk in chunks:
-                    tasks.append(
-                        (
-                            start_chunk,
-                            end_chunk,
-                            input_file_path,
-                            input_file,
-                            SPLIT_DIMENSION,
-                        )
-                    )
-
-            with Pool(processes=os.cpu_count()) as pool:
-                pool.starmap(split_file_chunk, tasks)
+        if reading_remote_data:
+            self._split_with_dask(self.input_path)
         else:
-            split_file(0, DIMENSION_SIZE, self.input_path, SPLIT_DIMENSION)
+            self._split_with_nco(0, DIMENSION_SIZE, self.input_path, SPLIT_DIMENSION)
 
         print("Set up the batch simulation")
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
@@ -245,111 +291,3 @@ class BatchSplitCommand(BaseCommand):
         duplicated_input_paths = self.base_batch_dir.glob("*/inputs")
         with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
             executor.map(lambda elem: shutil.rmtree(elem), duplicated_input_paths)
-
-
-def split_file_chunk(start_index, end_index, input_path, input_file, split_dimension):
-    print("splitting ", input_path)
-    folders = input_path.split("/")
-    chunk_folder = folders[-2]
-    intervals = chunk_folder.split("-")[-1]
-    chunk_start, chunk_end = (int(elem) for elem in intervals.split("_"))
-    for index in range(start_index, end_index):
-        path = os.path.join(BATCH_INPUT_DIRS[chunk_start + index], input_file)
-        subprocess.run(
-            [
-                "ncks",
-                "-O",
-                "-h",
-                "-d",
-                f"{split_dimension},{index}",
-                input_path,
-                path,
-            ]
-        )
-
-    print("done splitting ", input_file)
-
-
-def split_file(
-    start_index: int, end_index: int, input_path: Path, split_dimension: str
-) -> None:
-    for input_file in INPUT_FILES:
-        src_input_path = input_path / input_file
-        print("splitting ", src_input_path)
-        for index in range(start_index, end_index):
-            path = os.path.join(BATCH_INPUT_DIRS[index], input_file)
-            subprocess.run(
-                [
-                    "ncks",
-                    "-O",
-                    "-h",
-                    "-d",
-                    f"{split_dimension},{index}",
-                    src_input_path,
-                    path,
-                ]
-            )
-        print("done splitting ", input_file)
-
-
-def is_dataset_big(input_path: Path) -> bool:
-    """Checks if the given input dataset is too big.
-
-    If the given directory contains folders, that means the dataset is enough
-    to use parallel processing. Otherwise, the dataset is small for parallel processing.
-
-    Args:
-        input_path (Path): Path to the input dataset
-
-    Raises:
-        ValueError: The given path contains both files and directories. It should only
-    contain either of those.
-
-    Returns:
-        bool: Whether the dataset is big or not
-
-    """
-    items = [item for item in input_path.iterdir()]
-    if all([item.is_file() for item in items]):
-        return False
-
-    if all([item.is_dir() for item in items]):
-        return True
-
-    raise ValueError(
-        "The provided path to the input data contains malformed information. "
-        "Either check the path or fix the input data."
-    )
-
-
-def sum_dimensions(input_path: Path) -> Union[int, int]:
-    """Sums the dimensions of the given path.
-
-    When the input dataset is too big, we store them in multiple chunks to process.
-    This functions walks into each of these chunks and calculates the sum of the
-    dimenions of the original dataset.
-
-    Args:
-        input_path (Path): Path to the input dataset
-
-    Returns:
-        int: The sum of X coordinates
-        int: The sum of Y coordinates
-    """
-    REFERENCE_INPUT_FILE = "run-mask.nc"
-    if not is_dataset_big(input_path):
-        return get_dimensions(input_path / REFERENCE_INPUT_FILE)
-    else:
-        items = [item for item in input_path.iterdir()]
-
-        # It is assumed that all of the input files will have
-        # the same dimensions. For that reason, one file is
-        # selected as a reference.
-        X = Y = 0
-        for item in items:
-            file_path = input_path / item / REFERENCE_INPUT_FILE
-            temp_x, temp_y = get_dimensions(file_path)
-            X += temp_x
-            Y += temp_y
-
-        return X, Y

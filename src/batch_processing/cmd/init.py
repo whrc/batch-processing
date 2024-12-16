@@ -40,7 +40,9 @@ class InitCommand(BaseCommand):
         # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
         # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
         subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
-        subprocess.run(f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True)
+        subprocess.run(
+            f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
+        )
 
         download_file(
             "gcp-slurm",
@@ -67,7 +69,25 @@ class InitCommand(BaseCommand):
             f"{self.exacloud_user_dir}[/bold green]"
         )
 
-        run_command(["lfs", "setstripe", "-S", "0.25M", self.exacloud_user_dir])
+        run_command(
+            [
+                "lfs",
+                "setstripe",
+                "-E",
+                "64M",
+                "-c",
+                "2",
+                "-E",
+                "512M",
+                "-c",
+                "8",
+                "-E",
+                "-1",
+                "-c",
+                "16",
+                self.exacloud_user_dir,
+            ]
+        )
 
         print(
             "\n[bold green]The initialization is successfully completed.[/bold green]"
