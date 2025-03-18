@@ -23,8 +23,12 @@ class BatchMergeCommand(BaseCommand):
     def _merge_small_dataset(self, output_file, output_path):
         path = self.base_batch_dir / "batch_*" / "output" / output_file
         files = sorted(glob.glob(path.as_posix()), key=get_batch_number)
+        concat_dim = "y"
+        if output_file.startswith("restart") or output_file == "run_status.nc":
+            concat_dim = "Y"
+
         print(f"Reading {output_file}")
-        ds = xr.open_mfdataset(files, engine="h5netcdf", combine="nested", concat_dim="y", data_vars="minimal", coords="minimal", compat="override", decode_cf=False, decode_times=False)
+        ds = xr.open_mfdataset(files, engine="h5netcdf", combine="nested", concat_dim=concat_dim, data_vars="minimal", coords="minimal", compat="override", decode_cf=False, decode_times=False)
         ds.to_netcdf(f"{output_path}/{output_file}")
 
     def _merge(self, output_file, bucket_path):
@@ -32,11 +36,14 @@ class BatchMergeCommand(BaseCommand):
         path = self.base_batch_dir / "batch_*" / "output" / output_file
         files = sorted(glob.glob(path.as_posix()), key=get_batch_number)
         print(f"Reading {output_file}")
-        ds = xr.open_mfdataset(files, engine="h5netcdf", combine="nested", concat_dim="y", parallel=True, data_vars="minimal", coords="minimal", compat="override", decode_cf=False, decode_times=False)
-        if output_file == "run_status.nc" or output_file.startswith("restart"):
-            ds = ds.chunk({"X": "auto", "Y": "auto"})
-        else:
-            ds = ds.chunk({"time": -1, "x": "auto", "y": "auto"})
+
+        concat_dim = "y"
+        chunk_size = {"time": -1, "x": "auto", "y": "auto"}
+        if output_file.startswith("restart") or output_file == "run_status.nc":
+            concat_dim = "Y"
+            chunk_size = {"X": "auto", "Y": "auto"}
+        ds = xr.open_mfdataset(files, engine="h5netcdf", combine="nested", concat_dim=concat_dim, parallel=True, data_vars="minimal", coords="minimal", compat="override", decode_cf=False, decode_times=False)
+        ds = ds.chunk(chunk_size)
 
         gcsmap = gcsfs.mapping.GCSMap(f"{bucket_path}/{output_file[:len(output_file)-3]}.zarr", gcs=fs, check=False, create=True)
         delayed_obj = ds.to_zarr(gcsmap, mode="w", compute=False)
