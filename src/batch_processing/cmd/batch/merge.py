@@ -92,6 +92,7 @@ class BatchMergeCommand(BaseCommand):
 
         if not self._check_status():
             print("Cancelled.")
+            return
 
         file_path = self.base_batch_dir / "batch_0" / "output" / "run_status.nc"
         print(f"File path: {file_path}")
