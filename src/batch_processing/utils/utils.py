@@ -394,6 +394,31 @@ def get_batch_number(path: Union[Path, str]) -> int:
     return int(match_found.group(1)) if match_found else -1
 
 
+def get_batch_folders(path: Path) -> List[Path]:
+    """
+    Find all folders that match the pattern 'batch_[integer]' in the given path.
+    
+    Args:
+        path (Path): A Path object representing the directory to search in
+        
+    Returns:
+        list: A list of Path objects for folders matching the pattern
+    """
+    if not isinstance(path, Path):
+        path = Path(path)
+    
+    batch_folders = []
+    for item in path.iterdir():
+        if item.is_dir():
+            batch_num = get_batch_number(item)
+            if batch_num >= 0:  # Valid batch number found
+                batch_folders.append(item)
+    
+    batch_folders.sort(key=get_batch_number)
+    
+    return batch_folders
+
+
 def render_slurm_job_script(template_name: str, values: dict) -> str:
     """Reads the specified template file and populates it with the given values.
 

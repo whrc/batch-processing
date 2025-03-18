@@ -2,9 +2,11 @@ import gcsfs
 import xarray as xr
 import glob
 from pathlib import Path
+import numpy as np
 from dask.distributed import Client
 
 from batch_processing.cmd.base import BaseCommand
+from batch_processing.cmd.batch.check import BatchCheckCommand
 from batch_processing.utils.utils import get_batch_number, get_dimensions, get_gcsfs, get_cluster
 
 
@@ -57,12 +59,38 @@ class BatchMergeCommand(BaseCommand):
 
         cluster.close()
 
+    def _check_status(self):
+        run_status_file_pattern = f"{self.base_batch_dir.as_posix()}/batch_*/output/run_status.nc"
+
+        ds = xr.open_mfdataset(run_status_file_pattern, engine="h5netcdf", concat_dim="Y", combine="nested")
+        status_unique, status_counts = np.unique(ds.run_status.values, return_counts=True)
+        merged = dict(zip(status_unique, status_counts))
+
+        if len(status_unique) and status_unique[0] == 100:
+            print("All status codes are 100! Continuing to merge")
+            return True
+        else:
+            print("status code : count")
+            print(merged)
+            while True:
+                choice = input("Status codes different than 100 were found. Do you want to continue merging (y/n) ? ")
+                choice = choice.lower()
+                if choice in ['y', 'n']:
+                    return choice == 'y'
+                print("Please enter 'y' or 'n'.")
+
     def execute(self):
+        internal_check_command = BatchCheckCommand(self._args)
+        internal_check_command.execute()
+
+        if not self._check_status():
+            print("Cancelled.")
+
         file_path = self.base_batch_dir / "batch_0" / "output" / "run_status.nc"
         print(f"File path: {file_path}")
         x, y = get_dimensions(file_path)
         total_batch_count = len([p for p in self.base_batch_dir.iterdir() if "batch_" in p.as_posix()])
-        print("Total batch count is ", total_batch_count)
+        print("Total batch count is", total_batch_count)
 
         assert y == 1
         y *= total_batch_count
@@ -87,3 +115,16 @@ class BatchMergeCommand(BaseCommand):
                 )
 
             self._merge_with_dask(self._args.bucket_path)
+
+        # print average cell run time
+        run_status_file = self.result_dir / "run_status.nc"
+        if not run_status_file.exists():
+            print(f"Couldn't find {run_status_file.as_posix()}. Aborting!")
+            return
+
+        ds = xr.open_dataset(run_status_file.as_posix(), engine="h5netcdf")
+
+        # convert timedelta64 to seconds
+        runtimes_in_seconds = [td / np.timedelta64(1, 's') for td in ds.total_runtime]
+        average_cell_runtime = np.nanmean(runtimes_in_seconds)
+        print(f"The average cell run time is {average_cell_runtime} seconds ({round(average_cell_runtime / 60, 2)} min)")
