@@ -597,3 +597,16 @@ def get_cluster(n_workers, walltime="06:00:00"):
         python="/usr/bin/python3",
         walltime=walltime,
     )
+
+
+def extract_variable_name(filename):
+    """Extracts the variable name from the filename before the first underscore `_`.
+    
+    Example:
+        >>> extract_variable_name("ALD_yearly_eq.nc")
+        'ALD'
+    """
+    parts = filename.split("_")
+    if parts:
+        return parts[0]  # First part before `_`
+    return None
