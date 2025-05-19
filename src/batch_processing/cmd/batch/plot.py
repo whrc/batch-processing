@@ -13,7 +13,7 @@ from batch_processing.utils.utils import extract_variable_name
 
 class BatchPlotCommand(BaseCommand):
     # variable name can't start with a number, so an underscore added
-    _4D_VARIABLES = ["TLAYER"]
+    _4D_VARIABLES = ["TLAYER", "LAYERDEPTH", "LAYERTYPE"]
 
     def __init__(self, args):
         super().__init__()
@@ -24,7 +24,7 @@ class BatchPlotCommand(BaseCommand):
         if not self.result_dir.exists():
             raise FileNotFoundError(f"{self.result_dir} doesn't exist")
 
-    def _plot_3d_variable(self, nc_file, variable_name):
+    def _plot_3d_variable(self, nc_file, variable_name, stage):
         """
         Reads the specified variable from a NetCDF file, calculates mean over time,
         and returns a Matplotlib figure.
@@ -94,7 +94,7 @@ class BatchPlotCommand(BaseCommand):
                 # Labels and titles
                 axes[2].set_xlabel("Time (years)")
                 axes[2].set_ylabel(f"{variable_name}")
-                axes[2].set_title(f"Mean {variable_name} Over Time with ±1 Std Dev")
+                axes[2].set_title(f"Mean {variable_name}\nOver Time with ±1 Std Dev\n({stage})")
 
 
                 plt.tight_layout()
@@ -105,7 +105,7 @@ class BatchPlotCommand(BaseCommand):
             print(f"Error processing {nc_file}: {e}")
             return None
 
-    def _plot_4d_variable(self, nc_file, variable_name):
+    def _plot_4d_variable(self, nc_file, variable_name, stage):
         """
         Average 100 years of data for each month and display the monthly temperature profiles.
         This will show the seasonal cycle in the vertical temperature structure.
@@ -207,13 +207,13 @@ class BatchPlotCommand(BaseCommand):
                 ax.grid(True, linestyle='--', alpha=0.5)
 
                 # Set labels and title
-                ax.set_xlabel('Temperature (°C)', fontsize=14)
-                ax.set_ylabel('Layer/Depth', fontsize=14)
-                ax.set_title(f'Monthly Average Temperature Profiles for {variable_name} (Averaged over {years_to_use} years)',
+                ax.set_xlabel('Temperature (°C)', fontsize=16)
+                ax.set_ylabel('Layer/Depth', fontsize=16)
+                ax.set_title(f'Monthly Average Temperature Profiles for {variable_name} ({stage}, Averaged over {years_to_use} years)',
                             fontsize=16)
 
                 # Add legend with month names
-                ax.legend(loc='lower right', fontsize=12)
+                ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
 
                 # Adjust subplot parameters to give more room for the y-label
                 # This might help reduce the perceived left margin
@@ -227,7 +227,7 @@ class BatchPlotCommand(BaseCommand):
 
     def execute(self):
         # Only files starting with a capital letter
-        nc_files = [f for f in os.listdir(self.result_dir) if f.endswith(".nc") and f[0].isupper()]
+        nc_files = sorted([f for f in os.listdir(self.result_dir) if f.endswith(".nc") and f[0].isupper()])
         if not nc_files:
             raise ValueError("No valid NetCDF files found in the specified folder.")
 
@@ -236,16 +236,14 @@ class BatchPlotCommand(BaseCommand):
         with PdfPages(new_file_path) as pdf:
             for nc_file in nc_files:
                 nc_file_path = os.path.join(self.result_dir, nc_file)
-                variable_name = extract_variable_name(nc_file)
+                variable_name, stage = extract_variable_name(nc_file)
 
-                if variable_name == "TLAYER":
-                    print(f"Plotting {variable_name}")
+                if variable_name:
+                    print(f"Plotting {variable_name} for stage {stage}")
                     if variable_name in self._4D_VARIABLES:
-                        fig = self._plot_4d_variable(nc_file_path, variable_name)
-                        # fig = 10
+                        fig = self._plot_4d_variable(nc_file_path, variable_name, stage)
                     else:
-                        fig = self._plot_3d_variable(nc_file_path, variable_name)
-                        # fig = 10
+                        fig = self._plot_3d_variable(nc_file_path, variable_name, stage)
 
                     if fig:
                         pdf.savefig(fig)  # Save the figure to PDF

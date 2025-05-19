@@ -600,13 +600,15 @@ def get_cluster(n_workers, walltime="06:00:00"):
 
 
 def extract_variable_name(filename):
-    """Extracts the variable name from the filename before the first underscore `_`.
+    """Extracts the variable name and stage name from the filename.
     
     Example:
         >>> extract_variable_name("ALD_yearly_eq.nc")
-        'ALD'
+        ('ALD', 'eq')
     """
     parts = filename.split("_")
-    if parts:
-        return parts[0]  # First part before `_`
+    if len(parts) >= 2:
+        # Get first part and stage name (without .nc extension)
+        stage_name = parts[-1].split('.')[0]
+        return parts[0], stage_name
     return None
