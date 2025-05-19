@@ -48,7 +48,7 @@ class BatchPlotCommand(BaseCommand):
                 fill_value = nc.variables[variable_name]._FillValue if hasattr(nc.variables[variable_name], "_FillValue") else np.nan
                 var_data = np.where(var_data == fill_value, np.nan, var_data)
 
-                print('time_dim:',time_dim)
+                # print('time_dim:',time_dim)
                 t_size = nc.dimensions[time_dim].size
                 time_steps = np.arange(t_size)
                 print(t_size)
@@ -110,124 +110,116 @@ class BatchPlotCommand(BaseCommand):
         Average 100 years of data for each month and display the monthly temperature profiles.
         This will show the seasonal cycle in the vertical temperature structure.
         """
-        nc = Dataset(nc_file, 'r')
-        
-        # Get dimensions
-        num_layers = nc.dimensions['layer'].size
-        num_times = nc.dimensions['time'].size
+        try:
+            with Dataset(nc_file, 'r') as nc:
+                # Get dimensions
+                num_layers = nc.dimensions['layer'].size
+                num_times = nc.dimensions['time'].size
 
-        # Calculate how many complete years we have (assuming monthly data)
-        num_years = num_times // 12
-        print(f"Total number of years available: {num_years}")
+                # Calculate how many complete years we have (assuming monthly data)
+                num_years = num_times // 12
+                print(f"Total number of years available: {num_years}")
 
-        # Use up to 100 years, or whatever is available
-        years_to_use = min(100, num_years)
-        print(f"Using {years_to_use} years for monthly averages")
+                # Use up to 100 years, or whatever is available
+                years_to_use = min(100, num_years)
+                print(f"Using {years_to_use} years for monthly averages")
 
-        # Find valid layers (excluding those with mostly zeros)
-        valid_layers = []
-        for layer_idx in range(num_layers):
-            # Check the first time step for this layer
-            layer_data = nc.variables[variable_name][0, layer_idx, :, :]
+                # Find valid layers (excluding those with mostly zeros)
+                valid_layers = []
+                for layer_idx in range(num_layers):
+                    # Check the first time step for this layer
+                    layer_data = nc.variables[variable_name][0, layer_idx, :, :]
 
-            # Check if this layer has meaningful data (not all zeros)
-            zero_percentage = np.sum(layer_data == 0) / layer_data.size * 100
+                    # Check if this layer has meaningful data (not all zeros)
+                    zero_percentage = np.sum(layer_data == 0) / layer_data.size * 100
 
-            # Skip layers that are mostly zeros (likely default values)
-            if zero_percentage <= 80:
-                valid_layers.append(layer_idx)
-            else:
-                print(f"Layer {layer_idx}: Skipping - {zero_percentage:.2f}% of values are zero")
+                    # Skip layers that are mostly zeros (likely default values)
+                    if zero_percentage <= 80:
+                        valid_layers.append(layer_idx)
+                    else:
+                        print(f"Layer {layer_idx}: Skipping - {zero_percentage:.2f}% of values are zero")
 
-        valid_layers = np.array(valid_layers)
+                valid_layers = np.array(valid_layers)
 
-        # Create arrays to store monthly average temperatures
-        # 12 months, each with data for all valid layers
-        monthly_avg_temps = np.zeros((12, len(valid_layers)))
+                # Create arrays to store monthly average temperatures
+                # 12 months, each with data for all valid layers
+                monthly_avg_temps = np.zeros((12, len(valid_layers)))
 
-        # Process each month
-        for month in range(12):
-            print(f"Processing month {month+1}...")
+                # Process each month
+                for month in range(12):
+                    print(f"Processing month {month+1}...")
 
-            # Collect temperature data for this month across years
-            month_data = []
+                    # Collect temperature data for this month across years
+                    month_data = []
 
-            # Get data for this month from each year
-            for year in range(years_to_use):
-                time_idx = year * 12 + month
-                if time_idx < num_times:  # Make sure we don't exceed the data bounds
-                    # For each valid layer, get the temperature data
-                    for i, layer_idx in enumerate(valid_layers):
-                        layer_data = nc.variables[variable_name][time_idx, layer_idx, :, :]
-                        avg_temp = np.nanmean(layer_data)  # Average across spatial dimensions
+                    # Get data for this month from each year
+                    for year in range(years_to_use):
+                        time_idx = year * 12 + month
+                        if time_idx < num_times:  # Make sure we don't exceed the data bounds
+                            # For each valid layer, get the temperature data
+                            for i, layer_idx in enumerate(valid_layers):
+                                layer_data = nc.variables[variable_name][time_idx, layer_idx, :, :]
+                                avg_temp = np.nanmean(layer_data)  # Average across spatial dimensions
 
-                        # If we're in the first year, initialize the list
-                        if year == 0:
-                            month_data.append([avg_temp])
-                        else:
-                            month_data[i].append(avg_temp)
+                                # If we're in the first year, initialize the list
+                                if year == 0:
+                                    month_data.append([avg_temp])
+                                else:
+                                    month_data[i].append(avg_temp)
 
-            # Calculate average temperature for each layer in this month (across all years)
-            for i in range(len(valid_layers)):
-                monthly_avg_temps[month, i] = np.nanmean(month_data[i])
+                    # Calculate average temperature for each layer in this month (across all years)
+                    for i in range(len(valid_layers)):
+                        monthly_avg_temps[month, i] = np.nanmean(month_data[i])
 
-        # Month names for the plot
-        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                # Month names for the plot
+                month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-        # Create the plot
-        fig, ax = plt.subplots(figsize=(14, 9))
+                # Create the plot
+                fig, ax = plt.subplots(figsize=(14, 9))
 
-        # Use a cyclic colormap for months (so December and January are similar colors)
-        cmap = cm.twilight_shifted
+                # Use a cyclic colormap for months (so December and January are similar colors)
+                cmap = cm.twilight_shifted
 
-        # Plot temperature vs. layer for each month
-        for month in range(12):
-            color = cmap(month / 12)
-            ax.plot(monthly_avg_temps[month], valid_layers, '-', 
-                    linewidth=2.5,
-                    color=color, 
-                    label=f'{month_names[month]}')
+                # Plot temperature vs. layer for each month
+                for month in range(12):
+                    color = cmap(month / 12)
+                    ax.plot(monthly_avg_temps[month], valid_layers, '-', 
+                            linewidth=2.5,
+                            color=color, 
+                            label=f'{month_names[month]}')
 
-        # Configure axes for depth:
-        # 1. Move x-axis to the top
-        ax.xaxis.set_ticks_position('top')
-        ax.xaxis.set_label_position('top')
+                # Configure axes for depth:
+                # 1. Move x-axis to the top
+                ax.xaxis.set_ticks_position('top')
+                ax.xaxis.set_label_position('top')
 
-        # 2. Set y-axis limits to ensure layer 0 is at the top and increases downward
-        ax.set_ylim(max(valid_layers), min(valid_layers))
+                # 2. Set y-axis limits to ensure layer 0 is at the top and increases downward
+                ax.set_ylim(max(valid_layers), min(valid_layers))
 
-        # 3. Make sure y-axis ticks are integers (layer numbers)
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                # 3. Make sure y-axis ticks are integers (layer numbers)
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-        # Add vertical line at x=0
-        ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
+                # Add vertical line at x=0
+                ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
 
-        # Add grid
-        ax.grid(True, linestyle='--', alpha=0.5)
+                # Add grid
+                ax.grid(True, linestyle='--', alpha=0.5)
 
-        # Set labels and title
-        ax.set_xlabel('Temperature (°C)', fontsize=14)
-        ax.set_ylabel('Layer/Depth', fontsize=14)
-        ax.set_title(f'Monthly Average Temperature Profiles (Averaged over {years_to_use} years)', 
-                    fontsize=16)
+                # Set labels and title
+                ax.set_xlabel('Temperature (°C)', fontsize=14)
+                ax.set_ylabel('Layer/Depth', fontsize=14)
+                ax.set_title(f'Monthly Average Temperature Profiles (Averaged over {years_to_use} years)', 
+                            fontsize=16)
 
-        # Add legend with month names
-        ax.legend(loc='lower right', fontsize=12)
+                # Add legend with month names
+                ax.legend(loc='lower right', fontsize=12)
 
-        # Close the NetCDF file
-        nc.close()
+                return fig
 
-        # Save figure
-        filename = 'monthly_average_temperature_profiles.png'
-        plt.savefig(filename, dpi=300, bbox_inches='tight')
-
-        # Also save in PDF format for better quality
-        pdf_filename = 'monthly_average_temperature_profiles.pdf'
-        plt.savefig(pdf_filename, bbox_inches='tight')
-
-        plt.show()
-        print(f"Plots saved as '{filename}' and '{pdf_filename}'")
+        except Exception as e:
+            print(f"Error processing {nc_file}: {e}")
+            return None
 
     def execute(self):
         # Only files starting with a capital letter
@@ -243,6 +235,7 @@ class BatchPlotCommand(BaseCommand):
                 variable_name = extract_variable_name(nc_file)
 
                 if variable_name:
+                    print(f"Plotting {variable_name}")
                     if variable_name in self._4D_VARIABLES:
                         fig = self._plot_4d_variable(nc_file_path, variable_name)
                         # fig = 10
