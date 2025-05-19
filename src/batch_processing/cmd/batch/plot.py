@@ -8,12 +8,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pathlib import Path
 
 from batch_processing.cmd.base import BaseCommand
-from batch_processing.utils.utils import extract_variable_name
+from batch_processing.utils.utils import extract_variable_name, send_email
 
 
 class BatchPlotCommand(BaseCommand):
     # variable name can't start with a number, so an underscore added
-    _4D_VARIABLES = ["TLAYER", "LAYERDEPTH", "LAYERTYPE"]
+    _4D_VARIABLES = ["TLAYER", "LAYERDEPTH", "LAYERTYPE", "SOC"]
     DEFAULT_VARIABLES_TO_PLOT = ["ALD", "GPP", "RG"]
 
     def __init__(self, args):
@@ -257,3 +257,10 @@ class BatchPlotCommand(BaseCommand):
                         print(f"Added plot for {variable_name} from {nc_file}")
 
         print(f"Plots saved in {new_file_path}")
+
+        if self._args.email_me:
+            try:
+                print(f"Sending email to {self._args.email_address}")
+                send_email(self._args.email_address, f"Summary Plots for {self._args.batches}", "See the attached for the PDF.", new_file_path)
+            except Exception as e:
+                print(f"Something went wrong while sending the email: {e}")

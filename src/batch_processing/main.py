@@ -5,6 +5,8 @@ import textwrap
 
 import lazy_import
 
+from batch_processing.utils.utils import get_email_from_username
+
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 BatchSplitCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.split.BatchSplitCommand"
@@ -282,9 +284,20 @@ def batch_plot(
     all_variables: bool = typer.Option(
         False, "--all", help="Plot all variables instead of the default set."
     ),
+    email_me: bool = typer.Option(
+        False, "--email-me", help="Send the summary plots via email to the default address."
+    ),
+    email_address: Optional[str] = typer.Option(
+        get_email_from_username(), "--email-address", help="Specify a custom email address to send the plots to."
+    )
 ):
     """Plots the results."""
-    args = type("Args", (), {"batches": batches, "all_variables": all_variables})()
+    args = type("Args", (), {
+        "batches": batches,
+        "all_variables": all_variables,
+        "email_me": email_me,
+        "email_address": email_address
+    })()
     BatchPlotCommand(args).execute()
 
 

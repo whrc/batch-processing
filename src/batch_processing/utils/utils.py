@@ -11,6 +11,10 @@ from pathlib import Path
 from string import Template
 from subprocess import CompletedProcess
 from typing import List, Tuple, Union
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 from dask_jobqueue import SLURMCluster
 import cftime
@@ -612,3 +616,39 @@ def extract_variable_name(filename):
         stage_name = parts[-1].split('.')[0]
         return parts[0], stage_name
     return None
+
+
+def get_email_from_username():
+    """Helper function to get the current user's email from their username"""
+    username = os.getenv("USER")
+    email_username = username.split("_")[0]
+
+    return f"{email_username}@woodwellclimate.org"
+
+
+def send_email(to: str, subject: str, body: str, pdf_path: str = None):
+    sender_email = "dteber@woodwellclimate.org"
+    password = os.getenv("CLUSTER_SEND_EMAIL_PASSWORD_DOGUKAN")
+
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = to
+    message["Subject"] = subject
+
+    message.attach(MIMEText(body, "plain"))
+
+    if pdf_path:
+        with open(pdf_path, "rb") as file:
+            attachment = MIMEApplication(file.read(), _subtype="pdf")
+            attachment.add_header(
+                "Content-Disposition", 
+                f"attachment; filename={os.path.basename(pdf_path)}"
+            )
+            message.attach(attachment)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, password)
+
+        server.send_message(message)
+
+    print(f"Email sent successfully to {to}")
