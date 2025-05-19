@@ -15,6 +15,9 @@ BatchRunCommand = lazy_import.lazy_class(
 BatchMergeCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.merge.BatchMergeCommand"
 )
+BatchPlotCommand = lazy_import.lazy_class(
+    "batch_processing.cmd.batch.plot.BatchPlotCommand"
+)
 BatchPostprocessCommand = lazy_import.lazy_class(
     "batch_processing.cmd.batch.postprocess.BatchPostprocessCommand"
 )
@@ -263,6 +266,23 @@ def batch_merge(
     """Merge the batches."""
     args = type("Args", (), {"batches": batches, "bucket_path": bucket_path})()
     BatchMergeCommand(args).execute()
+
+
+@batch_app.command("plot")
+def batch_plot(
+    batches: str = typer.Option(
+        ...,
+        "--batches",
+        "-b",
+        help=(
+            "Path to store the splitted batches. The given path will be concataned "
+            "with /mnt/exacloud/$USER"
+        ),
+    ),
+):
+    """Plots the results."""
+    args = type("Args", (), {"batches": batches})()
+    BatchPlotCommand(args).execute()
 
 
 @app.command("extract_cell")
