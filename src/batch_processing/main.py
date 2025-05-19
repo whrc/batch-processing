@@ -279,9 +279,12 @@ def batch_plot(
             "with /mnt/exacloud/$USER"
         ),
     ),
+    all_variables: bool = typer.Option(
+        False, "--all", help="Plot all variables instead of the default set."
+    ),
 ):
     """Plots the results."""
-    args = type("Args", (), {"batches": batches})()
+    args = type("Args", (), {"batches": batches, "all_variables": all_variables})()
     BatchPlotCommand(args).execute()
 
 

@@ -14,6 +14,7 @@ from batch_processing.utils.utils import extract_variable_name
 class BatchPlotCommand(BaseCommand):
     # variable name can't start with a number, so an underscore added
     _4D_VARIABLES = ["TLAYER", "LAYERDEPTH", "LAYERTYPE"]
+    DEFAULT_VARIABLES_TO_PLOT = ["ALD", "GPP", "RG"]
 
     def __init__(self, args):
         super().__init__()
@@ -232,6 +233,8 @@ class BatchPlotCommand(BaseCommand):
             raise ValueError("No valid NetCDF files found in the specified folder.")
 
         new_file_path = os.path.join(self.result_dir, "summary_plots.pdf")
+        if self._args.all_variables:
+            new_file_path = os.path.join(self.result_dir, "summary_plots_all.pdf")
 
         with PdfPages(new_file_path) as pdf:
             for nc_file in nc_files:
@@ -239,6 +242,9 @@ class BatchPlotCommand(BaseCommand):
                 variable_name, stage = extract_variable_name(nc_file)
 
                 if variable_name:
+                    if not self._args.all_variables and variable_name not in self.DEFAULT_VARIABLES_TO_PLOT:
+                        continue
+
                     print(f"Plotting {variable_name} for stage {stage}")
                     if variable_name in self._4D_VARIABLES:
                         fig = self._plot_4d_variable(nc_file_path, variable_name, stage)
