@@ -176,7 +176,7 @@ class BatchPlotCommand(BaseCommand):
                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
                 # Create the plot
-                fig, ax = plt.subplots(figsize=(14, 9))
+                fig, ax = plt.subplots(figsize=(12, 8))
 
                 # Use a cyclic colormap for months (so December and January are similar colors)
                 cmap = cm.twilight_shifted
@@ -184,9 +184,9 @@ class BatchPlotCommand(BaseCommand):
                 # Plot temperature vs. layer for each month
                 for month in range(12):
                     color = cmap(month / 12)
-                    ax.plot(monthly_avg_temps[month], valid_layers, '-', 
+                    ax.plot(monthly_avg_temps[month], valid_layers, '-',
                             linewidth=2.5,
-                            color=color, 
+                            color=color,
                             label=f'{month_names[month]}')
 
                 # Configure axes for depth:
@@ -209,11 +209,15 @@ class BatchPlotCommand(BaseCommand):
                 # Set labels and title
                 ax.set_xlabel('Temperature (°C)', fontsize=14)
                 ax.set_ylabel('Layer/Depth', fontsize=14)
-                ax.set_title(f'Monthly Average Temperature Profiles (Averaged over {years_to_use} years)', 
+                ax.set_title(f'Monthly Average Temperature Profiles for {variable_name} (Averaged over {years_to_use} years)',
                             fontsize=16)
 
                 # Add legend with month names
                 ax.legend(loc='lower right', fontsize=12)
+
+                # Adjust subplot parameters to give more room for the y-label
+                # This might help reduce the perceived left margin
+                plt.subplots_adjust(left=0.1)
 
                 return fig
 
@@ -234,7 +238,7 @@ class BatchPlotCommand(BaseCommand):
                 nc_file_path = os.path.join(self.result_dir, nc_file)
                 variable_name = extract_variable_name(nc_file)
 
-                if variable_name:
+                if variable_name == "TLAYER":
                     print(f"Plotting {variable_name}")
                     if variable_name in self._4D_VARIABLES:
                         fig = self._plot_4d_variable(nc_file_path, variable_name)
