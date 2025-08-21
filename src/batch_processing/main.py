@@ -31,6 +31,7 @@ MapCommand = lazy_import.lazy_class("batch_processing.cmd.map.MapCommand")
 SliceInputCommand = lazy_import.lazy_class(
     "batch_processing.cmd.slice_input.SliceInputCommand"
 )
+MonitorCommand = lazy_import.lazy_class("batch_processing.cmd.monitor.MonitorCommand")
 
 
 class LogLevel(str, Enum):
@@ -359,6 +360,35 @@ def map_command(
     """Maps the given path's status."""
     args = type("Args", (), {"batches": batches})()
     MapCommand(args).execute()
+
+
+@app.command("monitor")
+def monitor(
+    action: str = typer.Argument(
+        "start",
+        help="Action to perform: start, stop, restart, or status"
+    )
+):
+    """
+    Monitor SLURM jobs and automatically rollback preempted jobs (runs as background daemon).
+    
+    This command manages a background daemon that continuously monitors the SLURM queue
+    for job preemptions and automatically moves preempted jobs from spot/dask partitions
+    to the compute partition to ensure job completion.
+    
+    Examples:
+        bp monitor start    # Start the monitoring daemon
+        bp monitor stop     # Stop the monitoring daemon  
+        bp monitor restart  # Restart the monitoring daemon
+        bp monitor status   # Check daemon status
+        bp monitor          # Same as 'start'
+    """
+    if action not in ["start", "stop", "restart", "status"]:
+        typer.echo(f"Error: Invalid action '{action}'. Use: start, stop, restart, or status")
+        raise typer.Exit(1)
+        
+    args = type("Args", (), {"action": action})()
+    MonitorCommand(args).execute()
 
 
 def main():
