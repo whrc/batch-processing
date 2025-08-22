@@ -45,6 +45,7 @@ class LogLevel(str, Enum):
 
 class SlurmPartition(str, Enum):
     spot = "spot"
+    dask = "dask"
     compute = "compute"
 
 
