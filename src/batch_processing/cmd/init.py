@@ -18,19 +18,19 @@ class InitCommand(BaseCommand):
         # Copy necessary files from the cloud
         # dvm-dos-tem version v0.7.0 - 2023-06-14
         # Note: dvmdostem binary is compiled with USEMPI=true flag
-        print("[bold blue]Copying dvm-dos-tem to the home directory...[/bold blue]")
-        download_directory("gcp-slurm", "dvm-dos-tem/", self.home_dir)
+        print("[bold blue]Copying dvm-dos-tem to /opt directory...[/bold blue]")
+        download_directory("gcp-slurm", "dvm-dos-tem/", "/opt")
         # subprocess.run(
-        #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git {self.home_dir}/dvm-dos-tem",
+        #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/dvm-dos-tem",
         #     shell=True,
         #     check=True,
         #     executable="/bin/bash",
         # )
-        print(f"[bold green]dvm-dos-tem is copied to {self.home_dir}[/bold green]")
+        print(f"[bold green]dvm-dos-tem is copied to /opt[/bold green]")
 
         # print("[bold blue]Compile dvmdostem binary...[/bold blue]")
         # command = f"""
-        # cd {self.home_dir}/dvm-dos-tem && \
+        # cd /opt/dvm-dos-tem && \
         # export DOWNLOADPATH=/dependencies && \
         # . $DOWNLOADPATH/setup-env.sh && \
         # module load openmpi && \

@@ -8,7 +8,7 @@ class BaseCommand(ABC):
         self.user = os.getenv("USER")
         self.home_dir = os.getenv("HOME")
 
-        self.dvmdostem_path = Path(f"{self.home_dir}/dvm-dos-tem")
+        self.dvmdostem_path = Path("/opt/dvm-dos-tem")
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
         self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/util"
 
