@@ -47,7 +47,7 @@ INPUT_FILES_TO_SPLIT = [
 ]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
-SETUP_SCRIPTS_PATH = os.path.join("/opt", "dvm-dos-tem/scripts/util")
+SETUP_SCRIPTS_PATH = os.path.join("/opt/apps", "dvm-dos-tem/scripts/util")
 
 
 class BatchSplitCommand(BaseCommand):

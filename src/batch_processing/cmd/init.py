@@ -22,19 +22,19 @@ class InitCommand(BaseCommand):
         if self.dvmdostem_path.exists():
             print("[bold yellow]dvm-dos-tem already exists, using current installation...[/bold yellow]")
         else:
-            print("[bold blue]Copying dvm-dos-tem to /opt directory...[/bold blue]")
-            download_directory("gcp-slurm", "dvm-dos-tem/", "/opt")
+            print("[bold blue]Copying dvm-dos-tem to /opt/apps directory...[/bold blue]")
+            download_directory("gcp-slurm", "dvm-dos-tem/", "/opt/apps")
             # subprocess.run(
-            #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/dvm-dos-tem",
+            #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/apps/dvm-dos-tem",
             #     shell=True,
             #     check=True,
             #     executable="/bin/bash",
             # )
-            print(f"[bold green]dvm-dos-tem is copied to /opt[/bold green]")
+            print(f"[bold green]dvm-dos-tem is copied to /opt/apps[/bold green]")
 
         # print("[bold blue]Compile dvmdostem binary...[/bold blue]")
         # command = f"""
-        # cd /opt/dvm-dos-tem && \
+        # cd /opt/apps/dvm-dos-tem && \
         # export DOWNLOADPATH=/dependencies && \
         # . $DOWNLOADPATH/setup-env.sh && \
         # module load openmpi && \

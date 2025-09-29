@@ -106,7 +106,7 @@ class ExtractCellCommand(BaseCommand):
     def execute(self):
         if not self.dvmdostem_path.exists():
             raise Exception(
-                "dvm-dos-tem folder needs to exist in /opt directory. "
+                "dvm-dos-tem folder needs to exist in /opt/apps directory. "
                 f"Couldn't found in {self.dvmdostem_path}"
             )
 
