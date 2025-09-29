@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 from rich import print
 
@@ -18,15 +19,18 @@ class InitCommand(BaseCommand):
         # Copy necessary files from the cloud
         # dvm-dos-tem version v0.7.0 - 2023-06-14
         # Note: dvmdostem binary is compiled with USEMPI=true flag
-        print("[bold blue]Copying dvm-dos-tem to /opt directory...[/bold blue]")
-        download_directory("gcp-slurm", "dvm-dos-tem/", "/opt")
-        # subprocess.run(
-        #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/dvm-dos-tem",
-        #     shell=True,
-        #     check=True,
-        #     executable="/bin/bash",
-        # )
-        print(f"[bold green]dvm-dos-tem is copied to /opt[/bold green]")
+        if self.dvmdostem_path.exists():
+            print("[bold yellow]dvm-dos-tem already exists, using current installation...[/bold yellow]")
+        else:
+            print("[bold blue]Copying dvm-dos-tem to /opt directory...[/bold blue]")
+            download_directory("gcp-slurm", "dvm-dos-tem/", "/opt")
+            # subprocess.run(
+            #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/dvm-dos-tem",
+            #     shell=True,
+            #     check=True,
+            #     executable="/bin/bash",
+            # )
+            print(f"[bold green]dvm-dos-tem is copied to /opt[/bold green]")
 
         # print("[bold blue]Compile dvmdostem binary...[/bold blue]")
         # command = f"""
@@ -44,14 +48,17 @@ class InitCommand(BaseCommand):
             f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
         )
 
-        download_file(
-            "gcp-slurm",
-            "output_spec.csv",
-            self.output_spec_path,
-        )
-        print(
-            f"[bold blue]output_spec.csv is copied to {self.output_spec_path}[/bold blue]"
-        )
+        if Path(self.output_spec_path).exists():
+            print("[bold yellow]output_spec.csv already exists, using current file...[/bold yellow]")
+        else:
+            download_file(
+                "gcp-slurm",
+                "output_spec.csv",
+                self.output_spec_path,
+            )
+            print(
+                f"[bold blue]output_spec.csv is copied to {self.output_spec_path}[/bold blue]"
+            )
 
         run_command(["sudo", "-H", "mkdir", "-p", self.exacloud_user_dir])
         run_command(
