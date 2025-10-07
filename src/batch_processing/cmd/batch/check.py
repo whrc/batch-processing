@@ -45,7 +45,7 @@ class BatchCheckCommand(BaseCommand):
 
         return all_equal, batch_file_counts
 
-    def _diagnose_output_files(self, counts: Tuple[bool, Dict[int, int]]) -> None:
+    def _diagnose_output_files(self, counts: Dict[int, int]) -> None:
         # Group batches by file count for more concise reporting
         count_to_batches = defaultdict(list)
         for batch_num, file_count in counts.items():
@@ -79,4 +79,4 @@ class BatchCheckCommand(BaseCommand):
             print("The check is passed!")
             return
 
-        self._diagnose_output_files(self.base_batch_dir)
+        self._diagnose_output_files(counts)

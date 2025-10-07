@@ -259,16 +259,21 @@ def batch_merge(
         ),
     ),
     bucket_path: Optional[str] = typer.Option(
-        None,
+        "",
         "--bucket-path",
         help=(
             "Bucket path to write the results into. "
             "Required when the total cell size is greater than 40,000."
         ),
     ),
+    auto_approve: bool = typer.Option(
+        False,
+        "--auto-approve",
+        help="Skip user confirmation prompt and automatically proceed with merging.",
+    ),
 ):
-    """Merge the batches."""
-    args = type("Args", (), {"batches": batches, "bucket_path": bucket_path})()
+    """Merge the batches using hybrid approach that handles missing batches gracefully."""
+    args = type("Args", (), {"batches": batches, "bucket_path": bucket_path, "auto_approve": auto_approve})()
     BatchMergeCommand(args).execute()
 
 
