@@ -211,6 +211,9 @@ def batch_split(
     log_level: LogLevel = typer.Option(
         LogLevel.disabled, "--log-level", "-l", help="Set the log level"
     ),
+    job_name_prefix: Optional[str] = typer.Option(
+        None, "--job-name-prefix", help="Optional prefix for job names to make them unique"
+    ),
 ):
     """Split the given input data into smaller batches."""
     # Create args object for compatibility with command class
@@ -225,6 +228,7 @@ def batch_split(
         "t": t,
         "n": n,
         "log_level": log_level.value,
+        "job_name_prefix": job_name_prefix,
     }
     args = type("Args", (), all_args)()
     BatchSplitCommand(args).execute()
