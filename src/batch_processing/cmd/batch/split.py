@@ -87,6 +87,8 @@ class BatchSplitCommand(BaseCommand):
         else:
             job_name = f"{self.base_batch_dir.name}-batch-{index}"
 
+        additional_flags = "--no-output-cleanup --restart-run" if getattr(self._args, 'restart_run', False) else ""
+
         substitution_values = {
             "job_name": job_name,
             "partition": self._args.slurm_partition,
@@ -99,6 +101,7 @@ class BatchSplitCommand(BaseCommand):
             "s": self._args.s,
             "t": self._args.t,
             "n": self._args.n,
+            "additional_flags": additional_flags,
         }
 
         script_path = batch_dir / "slurm_runner.sh"

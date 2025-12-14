@@ -214,6 +214,9 @@ def batch_split(
     job_name_prefix: Optional[str] = typer.Option(
         None, "--job-name-prefix", help="Optional prefix for job names to make them unique"
     ),
+    restart_run: bool = typer.Option(
+        False, "--restart-run", help="Add --no-output-cleanup and --restart-run flags to mpirun command"
+    ),
 ):
     """Split the given input data into smaller batches."""
     # Create args object for compatibility with command class
@@ -229,6 +232,7 @@ def batch_split(
         "n": n,
         "log_level": log_level.value,
         "job_name_prefix": job_name_prefix,
+        "restart_run": restart_run,
     }
     args = type("Args", (), all_args)()
     BatchSplitCommand(args).execute()
