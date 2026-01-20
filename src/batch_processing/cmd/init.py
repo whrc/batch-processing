@@ -9,7 +9,8 @@ from batch_processing.utils.utils import download_directory, download_file, run_
 
 class InitCommand(BaseCommand):
     def __init__(self, args):
-        super().__init__()
+        basedir = getattr(args, "basedir", "/opt/apps/dvm-dos-tem")
+        super().__init__(basedir=basedir)
         self._args = args
 
     def execute(self):
@@ -22,31 +23,31 @@ class InitCommand(BaseCommand):
         if self.dvmdostem_path.exists():
             print("[bold yellow]dvm-dos-tem already exists, using current installation...[/bold yellow]")
         else:
-            print("[bold blue]Copying dvm-dos-tem to /opt/apps directory...[/bold blue]")
-            download_directory("gcp-slurm", "dvm-dos-tem/", "/opt/apps")
-            # subprocess.run(
-            #     f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git /opt/apps/dvm-dos-tem",
-            #     shell=True,
-            #     check=True,
-            #     executable="/bin/bash",
-            # )
-            print(f"[bold green]dvm-dos-tem is copied to /opt/apps[/bold green]")
+            print(f"[bold blue]Copying dvm-dos-tem to {self.dvmdostem_path} directory...[/bold blue]")
+            # download_directory("gcp-slurm", "dvm-dos-tem/", basedir_parent)
+            subprocess.run(
+                f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git {self.dvmdostem_path}",
+                shell=True,
+                check=True,
+                executable="/bin/bash",
+            )
+            print(f"[bold green]dvm-dos-tem is copied to {self.dvmdostem_path}[/bold green]")
 
-        # print("[bold blue]Compile dvmdostem binary...[/bold blue]")
-        # command = f"""
-        # cd /opt/apps/dvm-dos-tem && \
-        # export DOWNLOADPATH=/dependencies && \
-        # . $DOWNLOADPATH/setup-env.sh && \
-        # module load openmpi && \
-        # make USEMPI=true
-        # """
+            print("[bold blue]Compile dvmdostem binary...[/bold blue]")
+            command = f"""
+            cd {self.dvmdostem_path} && \
+            export DOWNLOADPATH=/dependencies && \
+            . $DOWNLOADPATH/setup-env.sh && \
+            module load openmpi && \
+            make USEMPI=true
+            """
 
-        # subprocess.run(command, shell=True, check=True, executable="/bin/bash")
-        # print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
-        subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
-        subprocess.run(
-            f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
-        )
+            subprocess.run(command, shell=True, check=True, executable="/bin/bash")
+            print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
+            subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
+            subprocess.run(
+                f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
+            )
 
         if Path(self.output_spec_path).exists():
             print("[bold yellow]output_spec.csv already exists, using current file...[/bold yellow]")

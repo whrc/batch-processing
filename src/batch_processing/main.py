@@ -84,9 +84,15 @@ def callback(
 
 
 @app.command("init")
-def init():
+def init(
+    basedir: str = typer.Option(
+        "/opt/apps/dvm-dos-tem",
+        "--basedir",
+        help="Base directory for dvm-dos-tem installation",
+    ),
+):
     """Initialize the environment for running the simulation."""
-    args = type("Args", (), {})()
+    args = type("Args", (), {"basedir": basedir})()
     InitCommand(args).execute()
 
 

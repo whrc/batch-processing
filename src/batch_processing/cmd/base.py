@@ -4,13 +4,13 @@ from pathlib import Path
 
 
 class BaseCommand(ABC):
-    def __init__(self):
+    def __init__(self, basedir: str = "/opt/apps/dvm-dos-tem"):
         self.user = os.getenv("USER")
         self.home_dir = os.getenv("HOME")
 
-        self.dvmdostem_path = Path("/opt/apps/dvm-dos-tem")
+        self.dvmdostem_path = Path(basedir)
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
-        self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/util"
+        self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/"
 
         # You might notice that the only variable which has a trailing
         # slash is in the below one. config.js file has it this way.
