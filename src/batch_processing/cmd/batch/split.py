@@ -47,7 +47,7 @@ INPUT_FILES_TO_SPLIT = [
 ]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
-SETUP_SCRIPTS_PATH = os.path.join("/opt/apps", "dvm-dos-tem/scripts/util")
+SETUP_SCRIPTS_PATH = os.path.join("/home/dteber_woodwellclimate_org/fire", "dvm-dos-tem/scripts/util")
 
 
 class BatchSplitCommand(BaseCommand):
@@ -87,7 +87,7 @@ class BatchSplitCommand(BaseCommand):
         else:
             job_name = f"{self.base_batch_dir.name}-batch-{index}"
 
-        additional_flags = "--no-output-cleanup --restart-run" if getattr(self._args, 'restart_run', False) else ""
+        additional_flags = "--no-output-cleanup" if getattr(self._args, 'restart_run', False) else ""
 
         substitution_values = {
             "job_name": job_name,

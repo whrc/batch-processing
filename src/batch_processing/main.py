@@ -215,7 +215,7 @@ def batch_split(
         None, "--job-name-prefix", help="Optional prefix for job names to make them unique"
     ),
     restart_run: bool = typer.Option(
-        False, "--restart-run", help="Add --no-output-cleanup and --restart-run flags to mpirun command"
+        False, "--restart-run", help="Add --no-output-cleanup flag to mpirun command"
     ),
 ):
     """Split the given input data into smaller batches."""
