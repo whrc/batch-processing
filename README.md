@@ -27,6 +27,7 @@ pip install .
 All of the available commands are:
 
 * [bp init](#bp-init)
+* [bp tem](#bp-tem)
 * [bp batch split](#bp-batch-split)
 * [bp batch run](#bp-batch-run)
 * [bp batch merge](#bp-batch-merge)
@@ -52,6 +53,15 @@ bp init
 bp init --basedir /custom/path/to/dvm-dos-tem
 bp init --compile
 bp init --basedir /custom/path/to/dvm-dos-tem --compile
+```
+
+### bp tem
+
+Shows the current dvm-dos-tem installation path.
+This reads from the `~/.bpconfig` file created by `bp init`, or returns the default path `/opt/apps/dvm-dos-tem` if no config exists.
+
+```bash
+bp tem
 ```
 
 ### bp batch split
