@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 CONFIG_FILE_PATH = Path.home() / ".bpconfig"
-DEFAULT_BASEDIR = "/opt/apps/dvm-dos-tem"
+DEFAULT_BASEDIR = "/opt/apps"
+DVMDOSTEM_FOLDER = "dvm-dos-tem"
 
 
 def get_basedir_from_config() -> str:
@@ -27,7 +28,7 @@ class BaseCommand(ABC):
         # Use provided basedir, or read from config, or use default
         if basedir is None:
             basedir = get_basedir_from_config()
-        self.dvmdostem_path = Path(basedir)
+        self.dvmdostem_path = Path(basedir) / DVMDOSTEM_FOLDER
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
         self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/"
 
