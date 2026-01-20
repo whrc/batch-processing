@@ -1,13 +1,32 @@
+import json
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+CONFIG_FILE_PATH = Path.home() / ".bpconfig"
+DEFAULT_BASEDIR = "/opt/apps/dvm-dos-tem"
+
+
+def get_basedir_from_config() -> str:
+    """Read basedir from config file if it exists."""
+    if CONFIG_FILE_PATH.exists():
+        try:
+            with open(CONFIG_FILE_PATH, "r") as f:
+                config = json.load(f)
+                return config.get("basedir", DEFAULT_BASEDIR)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return DEFAULT_BASEDIR
+
 
 class BaseCommand(ABC):
-    def __init__(self, basedir: str = "/opt/apps/dvm-dos-tem"):
+    def __init__(self, basedir: str = None):
         self.user = os.getenv("USER")
         self.home_dir = os.getenv("HOME")
 
+        # Use provided basedir, or read from config, or use default
+        if basedir is None:
+            basedir = get_basedir_from_config()
         self.dvmdostem_path = Path(basedir)
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
         self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/"

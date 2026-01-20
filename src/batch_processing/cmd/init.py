@@ -1,9 +1,11 @@
+import json
+import shutil
 import subprocess
 from pathlib import Path
 
 from rich import print
 
-from batch_processing.cmd.base import BaseCommand
+from batch_processing.cmd.base import BaseCommand, CONFIG_FILE_PATH
 from batch_processing.utils.utils import download_directory, download_file, run_command
 
 
@@ -48,10 +50,16 @@ class InitCommand(BaseCommand):
                 print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
             else:
                 # Copy pre-built version from bucket (default)
-                basedir_parent = str(self.dvmdostem_path.parent)
-                print(f"[bold blue]Copying dvm-dos-tem to {basedir_parent} directory...[/bold blue]")
-                download_directory("gcp-slurm", "dvm-dos-tem/", basedir_parent)
-                print(f"[bold green]dvm-dos-tem is copied to {basedir_parent}[/bold green]")
+                basedir_parent = self.dvmdostem_path.parent
+                print(f"[bold blue]Copying dvm-dos-tem to {self.dvmdostem_path} directory...[/bold blue]")
+                download_directory("gcp-slurm", "dvm-dos-tem/", str(basedir_parent))
+                # Rename the downloaded folder to the target basedir name if different
+                downloaded_path = basedir_parent / "dvm-dos-tem"
+                if downloaded_path != self.dvmdostem_path:
+                    if self.dvmdostem_path.exists():
+                        shutil.rmtree(self.dvmdostem_path)
+                    shutil.move(str(downloaded_path), str(self.dvmdostem_path))
+                print(f"[bold green]dvm-dos-tem is copied to {self.dvmdostem_path}[/bold green]")
 
             subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
             subprocess.run(
@@ -71,40 +79,46 @@ class InitCommand(BaseCommand):
             )
 
         run_command(["sudo", "-H", "mkdir", "-p", self.exacloud_user_dir])
-        run_command(
-            [
-                "sudo",
-                "-H",
-                "chown",
-                "-R",
-                f"{self.user}:{self.user}",
-                self.exacloud_user_dir,
-            ]
-        )
+        # run_command(
+        #     [
+        #         "sudo",
+        #         "-H",
+        #         "chown",
+        #         "-R",
+        #         f"{self.user}:{self.user}",
+        #         self.exacloud_user_dir,
+        #     ]
+        # )
         print(
             "[bold green]A new directory is created for the current user, "
             f"{self.exacloud_user_dir}[/bold green]"
         )
 
-        run_command(
-            [
-                "lfs",
-                "setstripe",
-                "-E",
-                "64M",
-                "-c",
-                "2",
-                "-E",
-                "512M",
-                "-c",
-                "8",
-                "-E",
-                "-1",
-                "-c",
-                "16",
-                self.exacloud_user_dir,
-            ]
-        )
+        # run_command(
+        #     [
+        #         "lfs",
+        #         "setstripe",
+        #         "-E",
+        #         "64M",
+        #         "-c",
+        #         "2",
+        #         "-E",
+        #         "512M",
+        #         "-c",
+        #         "8",
+        #         "-E",
+        #         "-1",
+        #         "-c",
+        #         "16",
+        #         self.exacloud_user_dir,
+        #     ]
+        # )
+
+        # Save configuration to config file
+        config = {"basedir": str(self.dvmdostem_path)}
+        with open(CONFIG_FILE_PATH, "w") as f:
+            json.dump(config, f, indent=2)
+        print(f"[bold green]Configuration saved to {CONFIG_FILE_PATH}[/bold green]")
 
         print(
             "\n[bold green]The initialization is successfully completed.[/bold green]"
