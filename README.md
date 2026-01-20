@@ -42,13 +42,16 @@ All of the available commands are:
 
 The first command should be run before running any other commands.
 It configures the environment such as copying the [dvm-dos-tem model](https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem), creating a folder for your username in the filesystem etc.
-It takes the following optional argument:
+It takes the following optional arguments:
 
 * `--basedir`: Base directory for dvm-dos-tem installation. Optional, by default `/opt/apps/dvm-dos-tem`. This argument is useful when working with different versions of dvm-dos-tem.
+* `--compile`: Clone dvm-dos-tem from GitHub and compile it instead of copying a pre-built version from the bucket. Optional, by default copies from bucket to save time.
 
 ```bash
 bp init
 bp init --basedir /custom/path/to/dvm-dos-tem
+bp init --compile
+bp init --basedir /custom/path/to/dvm-dos-tem --compile
 ```
 
 ### bp batch split

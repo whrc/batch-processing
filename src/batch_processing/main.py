@@ -90,9 +90,14 @@ def init(
         "--basedir",
         help="Base directory for dvm-dos-tem installation",
     ),
+    compile: bool = typer.Option(
+        False,
+        "--compile",
+        help="Clone dvm-dos-tem from GitHub and compile it instead of copying pre-built version from bucket",
+    ),
 ):
     """Initialize the environment for running the simulation."""
-    args = type("Args", (), {"basedir": basedir})()
+    args = type("Args", (), {"basedir": basedir, "compile": compile})()
     InitCommand(args).execute()
 
 
