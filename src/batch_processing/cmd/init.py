@@ -40,8 +40,10 @@ class InitCommand(BaseCommand):
                 command = f"""
                 cd {self.dvmdostem_path} && \
                 export DOWNLOADPATH=/dependencies && \
-                . $DOWNLOADPATH/setup-env.sh && \
-                module load openmpi && \
+                if [ -f "$DOWNLOADPATH/setup-env.sh" ]; then \
+                    . $DOWNLOADPATH/setup-env.sh && \
+                    module load openmpi; \
+                fi && \
                 make USEMPI=true
                 """
 
