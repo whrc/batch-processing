@@ -6,6 +6,7 @@ import textwrap
 import lazy_import
 
 from batch_processing.utils.utils import get_email_from_username
+from batch_processing.cmd.base import get_basedir_from_config
 
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 BatchSplitCommand = lazy_import.lazy_class(
@@ -99,6 +100,13 @@ def init(
     """Initialize the environment for running the simulation."""
     args = type("Args", (), {"basedir": basedir, "compile": compile})()
     InitCommand(args).execute()
+
+
+@app.command("tem")
+def tem():
+    """Show the current dvm-dos-tem installation path."""
+    basedir = get_basedir_from_config()
+    typer.echo(basedir)
 
 
 @batch_app.command("postprocess")
