@@ -57,8 +57,11 @@ class InitCommand(BaseCommand):
                 print(f"[bold green]dvm-dos-tem is copied to {self.dvmdostem_path}[/bold green]")
 
             subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
+            # Make all Python scripts in scripts directory executable (recursively)
             subprocess.run(
-                f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
+                f"find {self.dvmdostem_scripts_path} -name '*.py' -exec chmod +x {{}} \\;",
+                shell=True,
+                check=True
             )
 
         if Path(self.output_spec_path).exists():
@@ -109,8 +112,8 @@ class InitCommand(BaseCommand):
         #     ]
         # )
 
-        # Save configuration to config file
-        config = {"basedir": str(self.dvmdostem_path)}
+        # Save configuration to config file (save the parent directory, not the full path)
+        config = {"basedir": str(self.dvmdostem_path.parent)}
         with open(CONFIG_FILE_PATH, "w") as f:
             json.dump(config, f, indent=2)
         print(f"[bold green]Configuration saved to {CONFIG_FILE_PATH}[/bold green]")
