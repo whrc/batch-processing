@@ -47,7 +47,6 @@ INPUT_FILES_TO_SPLIT = [
 ]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
-SETUP_SCRIPTS_PATH = os.path.join("/home/dteber_woodwellclimate_org/fire", "dvm-dos-tem/scripts/util")
 
 
 class BatchSplitCommand(BaseCommand):
@@ -68,9 +67,12 @@ class BatchSplitCommand(BaseCommand):
         # later, delete the last portion of the execute() code which removes
         # duplicated input files.
         # doing that should save us some time.
+        setup_script_path = os.path.join(
+            self.dvmdostem_scripts_path, "util", "setup_working_directory.py"
+        )
         subprocess.run(
             [
-                os.path.join(SETUP_SCRIPTS_PATH, "setup_working_directory.py"),
+                setup_script_path,
                 batch_dir,
                 "--input-data-path",
                 batch_input_dir,
