@@ -106,8 +106,8 @@ class ExtractCellCommand(BaseCommand):
     def execute(self):
         if not self.dvmdostem_path.exists():
             raise Exception(
-                "dvm-dos-tem folder needs to exist in /opt/apps directory. "
-                f"Couldn't found in {self.dvmdostem_path}"
+                f"dvm-dos-tem folder not found at {self.dvmdostem_path}. "
+                "Run 'bp init' first to set up the environment."
             )
 
         if not self._do_coords_in_range(

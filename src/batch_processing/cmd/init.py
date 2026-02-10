@@ -1,17 +1,16 @@
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 from rich import print
 
-from batch_processing.cmd.base import BaseCommand, CONFIG_FILE_PATH
+from batch_processing.cmd.base import BaseCommand, CONFIG_FILE_PATH, DEFAULT_BASEDIR
 from batch_processing.utils.utils import download_directory, download_file, run_command
 
 
 class InitCommand(BaseCommand):
     def __init__(self, args):
-        basedir = getattr(args, "basedir", "/opt/apps/dvm-dos-tem")
+        basedir = getattr(args, "basedir", DEFAULT_BASEDIR)
         super().__init__(basedir=basedir)
         self._args = args
         self._compile = getattr(args, "compile", False)
@@ -41,8 +40,10 @@ class InitCommand(BaseCommand):
                 command = f"""
                 cd {self.dvmdostem_path} && \
                 export DOWNLOADPATH=/dependencies && \
-                . $DOWNLOADPATH/setup-env.sh && \
-                module load openmpi && \
+                if [ -f "$DOWNLOADPATH/setup-env.sh" ]; then \
+                    . $DOWNLOADPATH/setup-env.sh && \
+                    module load openmpi; \
+                fi && \
                 make USEMPI=true
                 """
 
@@ -50,20 +51,17 @@ class InitCommand(BaseCommand):
                 print("[bold green]dvmdostem binary is successfully compiled.[/bold green]")
             else:
                 # Copy pre-built version from bucket (default)
-                basedir_parent = self.dvmdostem_path.parent
+                basedir = str(self.dvmdostem_path.parent)
                 print(f"[bold blue]Copying dvm-dos-tem to {self.dvmdostem_path} directory...[/bold blue]")
-                download_directory("gcp-slurm", "dvm-dos-tem/", str(basedir_parent))
-                # Rename the downloaded folder to the target basedir name if different
-                downloaded_path = basedir_parent / "dvm-dos-tem"
-                if downloaded_path != self.dvmdostem_path:
-                    if self.dvmdostem_path.exists():
-                        shutil.rmtree(self.dvmdostem_path)
-                    shutil.move(str(downloaded_path), str(self.dvmdostem_path))
+                download_directory("gcp-slurm", "dvm-dos-tem/", basedir)
                 print(f"[bold green]dvm-dos-tem is copied to {self.dvmdostem_path}[/bold green]")
 
             subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
+            # Make all Python scripts in scripts directory executable (recursively)
             subprocess.run(
-                f"chmod +x {self.dvmdostem_scripts_path}/*", shell=True, check=True
+                f"find {self.dvmdostem_scripts_path} -name '*.py' -exec chmod +x {{}} \\;",
+                shell=True,
+                check=True
             )
 
         if Path(self.output_spec_path).exists():
@@ -114,8 +112,8 @@ class InitCommand(BaseCommand):
         #     ]
         # )
 
-        # Save configuration to config file
-        config = {"basedir": str(self.dvmdostem_path)}
+        # Save configuration to config file (save the parent directory, not the full path)
+        config = {"basedir": str(self.dvmdostem_path.parent)}
         with open(CONFIG_FILE_PATH, "w") as f:
             json.dump(config, f, indent=2)
         print(f"[bold green]Configuration saved to {CONFIG_FILE_PATH}[/bold green]")

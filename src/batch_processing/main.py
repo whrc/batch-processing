@@ -6,7 +6,7 @@ import textwrap
 import lazy_import
 
 from batch_processing.utils.utils import get_email_from_username
-from batch_processing.cmd.base import get_basedir_from_config
+from batch_processing.cmd.base import get_basedir_from_config, DVMDOSTEM_FOLDER
 
 InitCommand = lazy_import.lazy_class("batch_processing.cmd.init.InitCommand")
 BatchSplitCommand = lazy_import.lazy_class(
@@ -87,9 +87,9 @@ def callback(
 @app.command("init")
 def init(
     basedir: str = typer.Option(
-        "/opt/apps/dvm-dos-tem",
+        "/opt/apps",
         "--basedir",
-        help="Base directory for dvm-dos-tem installation",
+        help="Parent directory where dvm-dos-tem will be installed",
     ),
     compile: bool = typer.Option(
         False,
@@ -105,8 +105,10 @@ def init(
 @app.command("tem")
 def tem():
     """Show the current dvm-dos-tem installation path."""
+    from pathlib import Path
     basedir = get_basedir_from_config()
-    typer.echo(basedir)
+    dvmdostem_path = Path(basedir) / DVMDOSTEM_FOLDER
+    typer.echo(dvmdostem_path)
 
 
 @batch_app.command("postprocess")

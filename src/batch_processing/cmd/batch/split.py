@@ -47,7 +47,6 @@ INPUT_FILES_TO_SPLIT = [
 ]
 BATCH_DIRS: List[Path] = []
 BATCH_INPUT_DIRS: List[Path] = []
-SETUP_SCRIPTS_PATH = os.path.join("/home/dteber_woodwellclimate_org/fire", "dvm-dos-tem/scripts/util")
 
 
 class BatchSplitCommand(BaseCommand):
@@ -62,15 +61,52 @@ class BatchSplitCommand(BaseCommand):
 
         self.input_path = args.input_path
 
+        # Patch setup_working_directory.py to include restart_from in sort_order
+        self._patch_setup_working_directory()
+
+    def _patch_setup_working_directory(self):
+        """
+        Patches setup_working_directory.py to add 'restart_from' to sort_order
+        if it's missing. This fixes compatibility with newer dvm-dos-tem versions.
+        """
+        setup_script_path = os.path.join(
+            self.dvmdostem_scripts_path, "util", "setup_working_directory.py"
+        )
+        
+        if not os.path.exists(setup_script_path):
+            return
+        
+        with open(setup_script_path, "r") as f:
+            content = f.read()
+        
+        # Check if restart_from is already in the file
+        if '"restart_from"' in content:
+            return
+        
+        # Add restart_from after output_interval in the sort_order list
+        if '"output_interval",' in content:
+            content = content.replace(
+                '"output_interval",',
+                '"output_interval",\n    "restart_from",'
+            )
+            
+            with open(setup_script_path, "w") as f:
+                f.write(content)
+            
+            print("Patched setup_working_directory.py to include 'restart_from' in sort_order")
+
     def _run_utils(self, batch_dir, batch_input_dir):
         # todo: instead of running this file, implement what this file does
         # inside bp.
         # later, delete the last portion of the execute() code which removes
         # duplicated input files.
         # doing that should save us some time.
+        setup_script_path = os.path.join(
+            self.dvmdostem_scripts_path, "util", "setup_working_directory.py"
+        )
         subprocess.run(
             [
-                os.path.join(SETUP_SCRIPTS_PATH, "setup_working_directory.py"),
+                setup_script_path,
                 batch_dir,
                 "--input-data-path",
                 batch_input_dir,
@@ -282,14 +318,12 @@ class BatchSplitCommand(BaseCommand):
             self._split_with_nco(0, DIMENSION_SIZE, self.input_path, SPLIT_DIMENSION)
 
         print("Set up the batch simulation")
-        with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-            executor.map(
-                lambda args: self._run_utils(*args), zip(BATCH_DIRS, BATCH_INPUT_DIRS)
-            )
+        for batch_dir, batch_input_dir in zip(BATCH_DIRS, BATCH_INPUT_DIRS):
+            self._run_utils(batch_dir, batch_input_dir)
 
         print("Configure each batch")
-        with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-            executor.map(lambda args: self._configure(*args), enumerate(BATCH_DIRS))
+        for index, batch_dir in enumerate(BATCH_DIRS):
+            self._configure(index, batch_dir)
 
         # we have to do this otherwise there would be two inputs folders:
         # input/ and inputs/
