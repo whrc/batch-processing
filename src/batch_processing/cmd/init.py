@@ -78,7 +78,7 @@ class InitCommand(BaseCommand):
                 f"[bold blue]output_spec.csv is copied to {self.output_spec_path}[/bold blue]"
             )
 
-        run_command(["sudo", "-H", "mkdir", "-p", self.exacloud_user_dir])
+        run_command(["mkdir", "-p", self.exacloud_user_dir])
         # run_command(
         #     [
         #         "sudo",
