@@ -1,3 +1,5 @@
+import sys
+import shlex
 import json
 import subprocess
 from pathlib import Path
@@ -14,6 +16,7 @@ class InitCommand(BaseCommand):
         super().__init__(basedir=basedir)
         self._args = args
         self._compile = getattr(args, "compile", False)
+        self._branch = getattr(args, "branch", None)
 
     def execute(self):
         if self.user == "root":
@@ -28,13 +31,16 @@ class InitCommand(BaseCommand):
             if self._compile:
                 # Clone from GitHub and compile
                 print(f"[bold blue]Cloning dvm-dos-tem to {self.dvmdostem_path} directory...[/bold blue]")
+                branch_opt = f"-b {shlex.quote(self._branch)} " if self._branch else ""
                 subprocess.run(
-                    f"git clone https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git {self.dvmdostem_path}",
+                    f"git clone {branch_opt}https://github.com/uaf-arctic-eco-modeling/dvm-dos-tem.git {shlex.quote(str(self.dvmdostem_path))}",
                     shell=True,
                     check=True,
                     executable="/bin/bash",
                 )
                 print(f"[bold green]dvm-dos-tem is cloned to {self.dvmdostem_path}[/bold green]")
+                subprocess.run("which python",shell=True, check=True, executable="/bin/bash")
+                #subprocess.run(f"pipx install {self.dvmdostem_path}/pyddt",shell=True, check=True, executable="/bin/bash")
 
                 print("[bold blue]Compiling dvmdostem binary...[/bold blue]")
                 command = f"""
@@ -55,14 +61,17 @@ class InitCommand(BaseCommand):
                 print(f"[bold blue]Copying dvm-dos-tem to {self.dvmdostem_path} directory...[/bold blue]")
                 download_directory("gcp-slurm", "dvm-dos-tem/", basedir)
                 print(f"[bold green]dvm-dos-tem is copied to {self.dvmdostem_path}[/bold green]")
+                if self._branch:
+                    print("[bold yellow]--branch is ignored unless --compile is specified.[/bold yellow]")
+
 
             subprocess.run([f"chmod +x {self.dvmdostem_bin_path}"], shell=True, check=True)
             # Make all Python scripts in scripts directory executable (recursively)
-            subprocess.run(
-                f"find {self.dvmdostem_scripts_path} -name '*.py' -exec chmod +x {{}} \\;",
-                shell=True,
-                check=True
-            )
+            #subprocess.run(
+            #    f"find {self.dvmdostem_scripts_path} -name '*.py' -exec chmod +x {{}} \\;",
+            #    shell=True,
+            #    check=True
+            #)
 
         if Path(self.output_spec_path).exists():
             print("[bold yellow]output_spec.csv already exists, using current file...[/bold yellow]")
