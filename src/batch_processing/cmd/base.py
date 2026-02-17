@@ -30,7 +30,7 @@ class BaseCommand(ABC):
             basedir = get_basedir_from_config()
         self.dvmdostem_path = Path(basedir) / DVMDOSTEM_FOLDER
         self.dvmdostem_bin_path = f"{self.dvmdostem_path}/dvmdostem"
-        self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/pyddt/src/pyddt/"
+        self.dvmdostem_scripts_path = f"{self.dvmdostem_path}/scripts/"
 
         # You might notice that the only variable which has a trailing
         # slash is in the below one. config.js file has it this way.
