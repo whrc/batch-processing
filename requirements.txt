@@ -13,5 +13,5 @@ zarr
 dask
 dask-jobqueue
 gcsfs
-h5netcdf
+h5netcdf[pyfive]
 typer

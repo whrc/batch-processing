@@ -19,6 +19,9 @@ class BatchMergeCommand(BaseCommand):
         self.base_batch_dir = Path(self.exacloud_user_dir, args.batches)
         self.result_dir = self.base_batch_dir / "all_merged"
         self.result_dir.mkdir(parents=True, exist_ok=True)
+        # Prefer netcdf4 for writes because h5netcdf can fail on dimension scales
+        # in some environments (H5DSis_scale RuntimeError).
+        self._preferred_write_engine = "netcdf4"
 
     def _get_available_batches(self):
         """Get list of available batch directories, sorted by batch number."""
@@ -29,7 +32,7 @@ class BatchMergeCommand(BaseCommand):
         return sorted(batch_dirs, key=lambda x: get_batch_number(x.name))
 
     def _get_available_output_files(self):
-        """Get list of output files from the first available batch."""
+        """Get list of NetCDF output files from the first available batch."""
         batch_dirs = self._get_available_batches()
         if not batch_dirs:
             return []
@@ -38,7 +41,43 @@ class BatchMergeCommand(BaseCommand):
         if not first_batch_output_dir.exists():
             return []
         
-        return [f.name for f in first_batch_output_dir.iterdir() if f.is_file()]
+        #return [f.name for f in first_batch_output_dir.iterdir() if f.is_file()]
+
+        files = [f.name for f in first_batch_output_dir.iterdir() if f.is_file()]
+        netcdf_files = [name for name in files if name.lower().endswith(".nc")]
+        skipped_non_netcdf = sorted(set(files) - set(netcdf_files))
+        if skipped_non_netcdf:
+            print(
+                f"Skipping {len(skipped_non_netcdf)} non-NetCDF output files: "
+                f"{', '.join(skipped_non_netcdf)}"
+            )
+            self._print_non_netcdf_batch_numbers(batch_dirs)
+        return netcdf_files
+
+    def _print_non_netcdf_batch_numbers(self, batch_dirs):
+        """Print batch numbers that contain .js and .txt sidecar files."""
+        non_netcdf_batches = {}
+
+        for batch_dir in batch_dirs:
+            output_dir = batch_dir / "output"
+            if not output_dir.exists():
+                continue
+
+            for output_file in output_dir.iterdir():
+                if not output_file.is_file():
+                    continue
+
+                lower_name = output_file.name.lower()
+                if lower_name.endswith(".js") or lower_name.endswith(".txt"):
+                    non_netcdf_batches.setdefault(output_file.name, []).append(batch_dir.name)
+
+        if not non_netcdf_batches:
+            return
+
+        print("Batch folders containing .js/.txt files:")
+        for filename in sorted(non_netcdf_batches):
+            batches = sorted(non_netcdf_batches[filename], key=get_batch_number)
+            print(f"  - {filename}: {', '.join(batches)}")
 
     def _create_canvas_for_variable(self, output_file, available_batches):
         """Create a canvas dataset for a specific output file using available batches."""
@@ -159,7 +198,14 @@ class BatchMergeCommand(BaseCommand):
         
         # Concatenate along the specified dimension
         if datasets:
-            combined_ds = xr.concat(datasets, dim=concat_dim)
+            #combined_ds = xr.concat(datasets, dim=concat_dim)
+            combined_ds = xr.concat(
+                datasets,
+                dim=concat_dim,
+                data_vars="minimal",
+                coords="minimal",
+                compat="override",
+            )
             
             # Fill the canvas with the combined data
             if concat_dim == 'y':
@@ -178,6 +224,30 @@ class BatchMergeCommand(BaseCommand):
             combined_ds.close()
         
         return canvas
+
+    def _write_netcdf_with_fallback(self, dataset, output_file_path):
+        """Write dataset and auto-switch to netcdf4 if h5netcdf is unstable."""
+        output_file_path = Path(output_file_path)
+
+        # Avoid reusing a partially written file from a previous failed attempt.
+        if output_file_path.exists():
+            output_file_path.unlink()
+
+        try:
+            dataset.to_netcdf(output_file_path.as_posix(), engine=self._preferred_write_engine)
+        except RuntimeError as e:
+            if self._preferred_write_engine != "h5netcdf" or "H5DSis_scale" not in str(e):
+                raise
+
+            print(
+                f"h5netcdf failed while writing {output_file_path.name} "
+                f"({e}). Retrying with netcdf4 engine for this and remaining files."
+            )
+            self._preferred_write_engine = "netcdf4"
+            if output_file_path.exists():
+                output_file_path.unlink()
+            dataset.to_netcdf(output_file_path.as_posix(), engine="netcdf4")
+
 
     def _merge_with_canvas(self, output_file, output_path):
         """Merge output file using canvas approach, handling missing batches gracefully."""
@@ -205,8 +275,12 @@ class BatchMergeCommand(BaseCommand):
         # Save the merged result
         output_file_path = output_path / output_file
         print(f"Saving merged {output_file} to {output_file_path}")
-        canvas.to_netcdf(output_file_path.as_posix(), engine="h5netcdf")
-        canvas.close()
+        #canvas.to_netcdf(output_file_path.as_posix(), engine="h5netcdf")
+        #canvas.close()
+        try:
+            self._write_netcdf_with_fallback(canvas, output_file_path)
+        finally:
+            canvas.close()
 
     def _merge_small_dataset(self, output_file, output_path):
         """Original merge method for small datasets - kept for compatibility."""
@@ -268,7 +342,18 @@ class BatchMergeCommand(BaseCommand):
             return True  # Allow merging to proceed
         
         try:
-            ds = xr.open_mfdataset(available_status_files, engine="h5netcdf", concat_dim="Y", combine="nested")
+            #ds = xr.open_mfdataset(available_status_files, engine="h5netcdf", concat_dim="Y", combine="nested")
+            ds = xr.open_mfdataset(
+                available_status_files,
+                engine="h5netcdf",
+                concat_dim="Y",
+                combine="nested",
+                data_vars="minimal",
+                coords="minimal",
+                compat="override",
+                decode_cf=False,
+                decode_times=False,
+            )
             # Replace nan values with -99 to indicate they were originally nan
             status_values = ds.run_status.values
             status_values = np.where(np.isnan(status_values), -99, status_values)
@@ -377,7 +462,11 @@ class BatchMergeCommand(BaseCommand):
         run_status_file = self.result_dir / "run_status.nc"
         if run_status_file.exists():
             try:
-                ds = xr.open_dataset(run_status_file.as_posix(), engine="h5netcdf")
+                ds = xr.open_dataset(
+                    run_status_file.as_posix(),
+                    engine="h5netcdf",
+                    decode_timedelta=False,
+                )
                 # Filter out fill values and get valid runtime values
                 total_runtime_values = ds.total_runtime.values.flatten()
                 

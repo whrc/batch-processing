@@ -236,7 +236,12 @@ class BatchSplitCommand(BaseCommand):
             )
             ds = xr.open_zarr(path)
         else:
-            ds = xr.open_dataset(self.input_path / "run-mask.nc", engine="h5netcdf")
+            #ds = xr.open_dataset(self.input_path / "run-mask.nc", engine="h5netcdf")
+            ds = xr.open_dataset(
+                self.input_path / "run-mask.nc",
+                engine="h5netcdf",
+                driver_kwds={"backend": "pyfive"},
+            )
 
         X, Y = ds.X.size, ds.Y.size
         print("Dimension size of X:", X)

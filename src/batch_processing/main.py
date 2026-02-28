@@ -1,7 +1,16 @@
+import logging
+import os
 import typer
 from typing import Optional
 from enum import Enum
 import textwrap
+
+# Force h5netcdf to use pyfive backend to avoid H5DSget_num_scales errors with
+# NetCDF4 files that have complex dimension scale metadata (e.g. from DVMDOSTEM)
+os.environ.setdefault("H5NETCDF_READ_BACKEND", "pyfive")
+
+# Suppress pyfive's verbose INFO-level logging (file access messages)
+logging.getLogger("pyfive").setLevel(logging.WARNING)
 
 import lazy_import
 
@@ -96,9 +105,14 @@ def init(
         "--compile",
         help="Clone dvm-dos-tem from GitHub and compile it instead of copying pre-built version from bucket",
     ),
+        branch: Optional[str] = typer.Option(
+        None,
+        "--branch",
+        help="Git branch of dvm-dos-tem to clone (used only with --compile)",
+    ),
 ):
     """Initialize the environment for running the simulation."""
-    args = type("Args", (), {"basedir": basedir, "compile": compile})()
+    args = type("Args", (), {"basedir": basedir, "compile": compile, "branch": branch})()
     InitCommand(args).execute()
 
 
