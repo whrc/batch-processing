@@ -85,6 +85,9 @@ class ExtractCellCommand(BaseCommand):
                 "s": self._args.s,
                 "t": self._args.t,
                 "n": self._args.n,
+                "additional_flags": "",
+                "flags_before_max_output": "",
+                "mpi_ranks": 1,
             }
         )
 

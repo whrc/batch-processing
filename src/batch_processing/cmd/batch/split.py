@@ -116,7 +116,14 @@ class BatchSplitCommand(BaseCommand):
 
     def _configure(self, index: int, batch_dir: Path) -> None:
         config_file = batch_dir / "config" / "config.js"
-        update_config(path=config_file.as_posix(), prefix_value=batch_dir)
+        #update_config(path=config_file.as_posix(), prefix_value=batch_dir)
+        scenario_continuation = getattr(self._args, "scenario_continuation", False)
+        update_config(
+            path=config_file.as_posix(),
+            prefix_value=batch_dir,
+            scenario_continuation=scenario_continuation,
+        )
+        mpi_ranks = max(1, int(getattr(self._args, "mpi_ranks", 1)))
 
         if self._args.job_name_prefix:
             job_name = f"{self._args.job_name_prefix}-{self.base_batch_dir.name}-batch-{index}"
@@ -124,6 +131,9 @@ class BatchSplitCommand(BaseCommand):
             job_name = f"{self.base_batch_dir.name}-batch-{index}"
 
         additional_flags = "--no-output-cleanup" if getattr(self._args, 'restart_run', False) else ""
+        flags_before_max_output = (
+            "--no-output-cleanup" if scenario_continuation else ""
+        )
 
         substitution_values = {
             "job_name": job_name,
@@ -138,6 +148,8 @@ class BatchSplitCommand(BaseCommand):
             "t": self._args.t,
             "n": self._args.n,
             "additional_flags": additional_flags,
+            "flags_before_max_output": flags_before_max_output,
+            "mpi_ranks": mpi_ranks,
         }
 
         script_path = batch_dir / "slurm_runner.sh"

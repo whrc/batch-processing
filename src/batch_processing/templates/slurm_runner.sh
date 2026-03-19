@@ -26,4 +26,4 @@ export PMIX_MCA_pcompress_base_silence_warning=1
 export HDF5_USE_FILE_LOCKING=FALSE
 
 # OpenMPI 4.1.x: use ROMIO instead of buggy OMPIO for NetCDF/HDF5 parallel I/O
-mpirun -x HDF5_USE_FILE_LOCKING -x PMIX_MCA_pcompress_base_silence_warning --use-hwthread-cpus --mca io ^ompio $dvmdostem_binary -f $config_path -l $log_level --max-output-volume=-1 $additional_flags -p $p -e $e -s $s -t $t -n $n
+mpirun -x HDF5_USE_FILE_LOCKING -x PMIX_MCA_pcompress_base_silence_warning --use-hwthread-cpus --mca io ^ompio $dvmdostem_binary -f $config_path -l $log_level $flags_before_max_output --max-output-volume=-1 $additional_flags -p $p -e $e -s $s -t $t -n $n

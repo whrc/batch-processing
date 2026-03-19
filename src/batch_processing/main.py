@@ -252,6 +252,23 @@ def batch_split(
     restart_run: bool = typer.Option(
         False, "--restart-run", help="Add --no-output-cleanup flag to mpirun command"
     ),
+    scenario_continuation: bool = typer.Option(
+        False,
+        "-sc",
+        "--scenario-continuation",
+        help=(
+            "Set restart_from to output/restart-tr.nc and add --no-output-cleanup "
+            "before --max-output-volume in slurm runner"
+        ),
+    ),
+    mpi_ranks: int = typer.Option(
+        1,
+        "--mpi-ranks",
+        help=(
+            "Number of MPI ranks per batch job. "
+            "Default is 1 to avoid Lustre NetCDF restart write failures."
+        ),
+    ),
 ):
     """Split the given input data into smaller batches."""
     # Create args object for compatibility with command class
@@ -268,6 +285,8 @@ def batch_split(
         "log_level": log_level.value,
         "job_name_prefix": job_name_prefix,
         "restart_run": restart_run,
+        "scenario_continuation": scenario_continuation,
+        "mpi_ranks": mpi_ranks,
     }
     args = type("Args", (), all_args)()
     BatchSplitCommand(args).execute()
