@@ -1,7 +1,16 @@
+import logging
+import os
 import typer
 from typing import Optional
 from enum import Enum
 import textwrap
+
+# Force h5netcdf to use pyfive backend to avoid H5DSget_num_scales errors with
+# NetCDF4 files that have complex dimension scale metadata (e.g. from DVMDOSTEM)
+os.environ.setdefault("H5NETCDF_READ_BACKEND", "pyfive")
+
+# Suppress pyfive's verbose INFO-level logging (file access messages)
+logging.getLogger("pyfive").setLevel(logging.WARNING)
 
 import lazy_import
 
@@ -96,9 +105,14 @@ def init(
         "--compile",
         help="Clone dvm-dos-tem from GitHub and compile it instead of copying pre-built version from bucket",
     ),
+        branch: Optional[str] = typer.Option(
+        None,
+        "--branch",
+        help="Git branch of dvm-dos-tem to clone (used only with --compile)",
+    ),
 ):
     """Initialize the environment for running the simulation."""
-    args = type("Args", (), {"basedir": basedir, "compile": compile})()
+    args = type("Args", (), {"basedir": basedir, "compile": compile, "branch": branch})()
     InitCommand(args).execute()
 
 
@@ -238,6 +252,23 @@ def batch_split(
     restart_run: bool = typer.Option(
         False, "--restart-run", help="Add --no-output-cleanup flag to mpirun command"
     ),
+    scenario_continuation: bool = typer.Option(
+        False,
+        "-sc",
+        "--scenario-continuation",
+        help=(
+            "Set restart_from to output/restart-tr.nc and add --no-output-cleanup "
+            "before --max-output-volume in slurm runner"
+        ),
+    ),
+    mpi_ranks: int = typer.Option(
+        1,
+        "--mpi-ranks",
+        help=(
+            "Number of MPI ranks per batch job. "
+            "Default is 1 to avoid Lustre NetCDF restart write failures."
+        ),
+    ),
 ):
     """Split the given input data into smaller batches."""
     # Create args object for compatibility with command class
@@ -254,6 +285,8 @@ def batch_split(
         "log_level": log_level.value,
         "job_name_prefix": job_name_prefix,
         "restart_run": restart_run,
+        "scenario_continuation": scenario_continuation,
+        "mpi_ranks": mpi_ranks,
     }
     args = type("Args", (), all_args)()
     BatchSplitCommand(args).execute()

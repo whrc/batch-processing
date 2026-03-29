@@ -64,6 +64,7 @@ IO_PATHS = {
     "fri_fire_file": "input/fri-fire.nc",
     "hist_exp_fire_file": "input/historic-explicit-fire.nc",
     "proj_exp_fire_file": "input/projected-explicit-fire.nc",
+    "restart_from":"output/",
 }
 
 
@@ -543,7 +544,10 @@ def submit_job(path: str) -> CompletedProcess:
     return subprocess.run(command, text=True, capture_output=True)
 
 
-def update_config(path: str, prefix_value: str) -> None:
+#def update_config(path: str, prefix_value: str) -> None:
+def update_config(
+    path: str, prefix_value: str, scenario_continuation: bool = False
+) -> None:
     """Updates the 'IO' section of config.js with new paths.
 
     This function reads the JSON configuration file, modifies the 'IO' section
@@ -553,13 +557,17 @@ def update_config(path: str, prefix_value: str) -> None:
     Args:
         path (str): The file system path to the JSON configuration file to be updated.
         prefix_value (str): The new prefix to be added to the paths in the 'IO' section.
+        scenario_continuation (bool): If True, set restart_from to output/restart-tr.nc.
 
     Returns:
         None
     """
     config_data = read_json_file(path)
     for key, val in IO_PATHS.items():
-        config_data["IO"][key] = f"{prefix_value}/{val}"
+        if key == "restart_from" and scenario_continuation:
+            config_data["IO"][key] = f"{prefix_value}/output/restart-tr.nc"
+        else:
+            config_data["IO"][key] = f"{prefix_value}/{val}"
 
     write_json_file(path, config_data)
 
